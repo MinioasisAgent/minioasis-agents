@@ -201,6 +201,35 @@ public sealed class KohaBearerHandlerTests
         Array.ForEach(responses, response => response.Dispose());
     }
 
+    // R22, ER-009: the caller's cancellation while the retry is in flight propagates as a cancellation that carries
+    // the caller's token, never as the first attempt's 401, and it cancels the retry.
+    [Fact]
+    public async Task Caller_cancellation_during_the_retry_propagates()
+    {
+        var tokens = NumberedTokens();
+        var api = new StubHttpMessageHandler(async (request, cancellationToken) =>
+        {
+            if (request.Index == 0)
+            {
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            }
+
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            throw new InvalidOperationException("Not reached.");
+        });
+        using var invoker = Invoker(tokens, api);
+        using var caller = new CancellationTokenSource();
+
+        var call = invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get, Address), caller.Token);
+        await api.WaitForRequestsAsync(2);
+        await caller.CancelAsync();
+
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => call.WaitAsync(Wait, TestCancellation));
+        Assert.Equal(caller.Token, exception.CancellationToken);
+        Assert.True(api.Requests[1].CancellationToken.IsCancellationRequested);
+    }
+
     [Fact]
     public void Null_token_provider_throws()
     {
