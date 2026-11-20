@@ -9,7 +9,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `draft`, in its pull request.
+- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Next: build, in the five pull requests the plan lists.
 
 ## What exists
 
