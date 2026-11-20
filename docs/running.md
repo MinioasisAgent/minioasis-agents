@@ -16,7 +16,7 @@ How to build, test, and run the application on a development machine. Keep this 
 bash scripts/preflight.sh
 ```
 
-On Windows, run `scripts/preflight.ps1`. The script restores, checks formatting, runs the tests, and builds the API for publishing, as `docs/workflow/checks.md` describes.
+On Windows, run `pwsh scripts/preflight.ps1`. The script restores, checks formatting, runs the tests, and builds the API for publishing, as `docs/workflow/checks.md` describes.
 
 ## Build and test
 
@@ -25,7 +25,9 @@ dotnet build minioasis.slnx
 dotnet test minioasis.slnx
 ```
 
-The test projects use xUnit v3 through the VSTest runner, which is what `dotnet test minioasis.slnx` starts. Each test project sets `IsTestingPlatformApplication` to `false` for that reason.
+The test projects use xUnit v3 through the VSTest runner, which is what `dotnet test minioasis.slnx` starts. They reference `xunit.v3.mtp-off`, the variant of xUnit v3 without Microsoft.Testing.Platform, because the .NET 10 SDK refuses to run a Microsoft.Testing.Platform project through VSTest. A test file needs `using Xunit;`.
+
+Each test run prints a warning that `VSTEST_ARTIFACTS_DIRECTORY` was not found and that `Microsoft.NET.Test.Sdk` may be outdated. The package is the latest version; the warning comes from the SDK's bundled test platform and is harmless. Do not downgrade to silence it.
 
 ## Run the API
 

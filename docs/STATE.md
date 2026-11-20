@@ -27,7 +27,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 - ADR 0002: development process adapted from GSD Core and brave-core.
 - ADR 0003: technical baseline.
 - ADR 0004: models per role.
-- The test framework and the test packages, accepted with the foundation pull request.
+- The test framework, xUnit v3 (`xunit.v3.mtp-off`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`), accepted by merging the foundation pull request.
 
 ## Open questions for the maintainer
 
