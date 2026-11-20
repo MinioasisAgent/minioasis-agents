@@ -7,9 +7,9 @@
 - **Verified at commit:** not yet
 - **Transfer branch:** not yet
 
-The spec is built in the five pull requests of `plan.md`, "Pull request breakdown". This record covers pull request 1, "Application error model", and pull request 2, "Api error contract". Every clause that a later pull request builds is listed below as "not yet built", with the pull request that builds it.
+The spec is built in the five pull requests of `plan.md`, "Pull request breakdown". This record covers pull request 1, "Application error model", pull request 2, "Api error contract", and pull request 3, "Koha configuration and generated client". Every clause that a later pull request builds is listed below as "not yet built", with the pull request that builds it.
 
-Test names are written `Project::Class::Method`, with `App` for `Minioasis.Application.Tests`, `Api` for `Minioasis.Api.Tests`, and the class's folder under `Shared/` (`Api::StartupTests` is at the project root). A number in brackets is the number of theory cases.
+Test names are written `Project::Class::Method`, with `App` for `Minioasis.Application.Tests`, `Api` for `Minioasis.Api.Tests`, `Koha` for `Minioasis.Koha.Tests`, and the class's folder under `Shared/` (`Api::StartupTests` is at the project root). A number in brackets is the number of theory cases.
 
 ## Clause checklist
 
@@ -62,6 +62,24 @@ Clauses built in pull request 2:
 | R9: no definition escapes the scan (PR 1 review finding) | Every static field or property of type `ApplicationErrorDefinition`, of any visibility, in any type of the Application assembly is a public static field of a class marked `[ErrorDefinitions]` | `App::Errors.ApplicationErrorDefinitionSourceTests::Every_definition_in_the_application_assembly_is_a_public_static_field_of_a_marked_class` |
 | R22 (Api part): a caller's abort is no failure and no `Error` entry | The caller cancels while the endpoint waits on the request's token | `Api::Extensions.ApiErrorHandlingTests::Aborted_request_logs_no_error` (a framework guard: ASP.NET handles the abort itself) |
 
+Clauses built in pull request 3:
+
+| Spec clause | Cases tested | Proving test (`Project::Class::Method`) |
+| --- | --- | --- |
+| R10: a missing or blank required variable fails, naming that variable (and no other required one) | `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, `MINIOASIS_KOHA_CLIENT_SECRET`, each absent, empty, and only whitespace (spaces; tabs; a tab and a newline) | `Koha::Factories.KohaOptionsFactoryTests::Missing_or_blank_variable_fails` (9) |
+| R10: the host stops before it starts | A blank base URL, a blank client id, an empty and a whitespace secret, each set for one host only; the exact startup exception, naming the variable | `Api::StartupTests::Invalid_koha_variable_stops_the_host` (4) |
+| R11: the base URL must be absolute, `https` or `http`, without query, fragment, or user information; `http` only in `Development` | A relative path (`/api/v1`, which .NET reads as `file:///api/v1` on Linux, and `api/v1`), plain text (`koha`, `not a url at all`), `ftp://…`, `file:///api/v1`, `http://…` in `Development` (accepted) and `Production` (refused), `https://…` with and without a trailing slash in both, upper-case scheme with a port and a deeper path, `?x=1`, a bare `?`, `#x`, a bare `#`, `u:p@`, `u@`, a bare `@`, `http://u:p@` in `Development` | `Koha::Factories.KohaOptionsFactoryTests::Base_url_rules` (27) |
+| R11: in a non-`Development` environment, `http` fails saying that `https` is required | `http://koha.test/api/v1` with the flag off | `Koha::Factories.KohaOptionsFactoryTests::Http_outside_development_says_https_is_required` |
+| R11: a trailing slash is optional and gives the same base | `…/api/v1` and `…/api/v1/` give `…/api/v1/`; a deeper path; a host with no path | `Koha::Factories.KohaOptionsFactoryTests::Trailing_slash_is_optional` (4) |
+| R11, D5: `Program.cs` passes the `Development` flag | `http://` stops the host in `Production` (naming the variable, saying `https` is required, without the host name) and starts it in `Development` | `Api::StartupTests::Http_base_url_fails_in_production_and_starts_in_development` |
+| R12: the timeout is 10 when absent, the number when it is 1 to 120 in ASCII digits, and fails otherwise, naming the variable and the range | The 16 listed values: absent, `1`, `10`, `010`, `120`, `0`, `-5`, `+10`, `121`, `10.5`, `ten`, empty, whitespace, ` 10 `, `１０`, `99999999999999999999` | `Koha::Factories.KohaOptionsFactoryTests::Timeout_rules` (16) |
+| R13: no startup message contains a configured value | Each failure kind (bad scheme, `http` outside `Development`, query, fragment, user information, not a URL, blank id, blank secret, timeout out of range, timeout not a number) with distinctive values in all four variables; asserts on `ToString()`, and that there is no inner exception | `Koha::Factories.KohaOptionsFactoryTests::Message_never_contains_the_value` (10) |
+| R13, `ER-008`: the options never write their values as text | `ToString()` of options holding marker values | `Koha::Options.KohaOptionsTests::Text_of_the_options_contains_no_value` |
+| R10 to R12: valid configuration gives the options; they are read while registering, so a bad value fails before a provider is built | All four values; a missing secret at registration; the `http` flag on and off | `Koha::Factories.KohaOptionsFactoryTests::Valid_configuration_gives_the_options`; `Koha::Extensions.KohaServiceCollectionExtensionsTests::Registers_the_checked_options_as_one_instance`, `::Invalid_configuration_fails_while_registering`, `::Insecure_http_flag_is_applied` (2) |
+| R14, D6: starting sends no request to Koha | A recording primary handler on every named client (it knows no Koha path or payload, `TS-003`); the host started and one request served; `Development` and `Production` | `Api::StartupTests::Starting_sends_nothing_to_koha` (2) |
+| `EX-007` (wiring, `TS-005`): the two named clients are registered, with `HttpClient.Timeout` switched off, under different names | `OAuth` and `Api`; an unregistered name would get the default 100 seconds | `Koha::Extensions.KohaServiceCollectionExtensionsTests::Registers_the_named_client` (2), `::The_two_clients_have_different_names` |
+| `EX-002`, `EX-003`: the focused contract and the generated client | `contracts/oauth.openapi.json` copies `tokenOAuth`, the `error` schema, the `oauth` tag, and the `/api/v1` server unchanged; the generated files are byte-identical to a fresh run of the documented command | Review, not a test: the regeneration was compared by checksum before committing |
+
 **`HEAD`.** The spec on `master` writes the error body for every method, `HEAD` included, and the writer does so; the decision is one statement in `ErrorResponseWriter`. A change that removes the body for `HEAD` waits for the maintainer (pull request #4). Until then the `HEAD` tests assert the status, `Allow`, `Content-Type`, and the one R5a entry, never the body. Kestrel itself sends no body for a `HEAD` response; the test server does.
 
 Not yet built: every other clause of R1 to R23, listed under "Requirement coverage". Their rows are added by the pull request that builds them.
@@ -104,6 +122,26 @@ For pull request 2, "stubs" were Api types that compiled and let the host start 
 | A temporary `Error` log in the abort path (a middleware inside the exception handler that logs any `OperationCanceledException`) | `Aborted_request_logs_no_error` |
 | PR 1 findings: an internal static definition field, a public static definition property, or an unmarked class in the Application assembly; each null guard removed | `Every_definition_in_the_application_assembly_is_a_public_static_field_of_a_marked_class`; `Null_source_throws`, `Null_definitions_throw`, `Null_assembly_throws`. Removing the guard of `AddApplication()` alone does not fail `Null_services_throw`, because `AddSingleton` then throws the same `ArgumentNullException` for `services`; replacing the guard with an early return made it fail |
 
+For pull request 3, "stubs" were Koha types that compiled but did nothing: `KohaOptionsFactory.Create` threw `NotImplementedException`, and `AddKohaIntegration` registered nothing, while `Program.cs` already called it. Against them, 76 of the 77 Koha tests then written failed, and 5 of the 7 new Api tests failed. The ones that passed: `The_two_clients_have_different_names` (the names were real constants) and `Starting_sends_nothing_to_koha` (2; nothing contacted Koha before the code either). Each was broken on purpose (below). `Text_of_the_options_contains_no_value` was added after the code and was seen failing by making `KohaOptions` a record.
+
+**Broken on purpose (pull request 3).** Each change below was made to the finished code, the named test classes were run, and the named tests failed; the code was then restored.
+
+| Change | Tests that failed |
+| --- | --- |
+| Both client names the same | `The_two_clients_have_different_names` |
+| The `Api` client, then the `OAuth` client, registered without its configuration | `Registers_the_named_client` (that client's row), each time |
+| `KohaOptions` a record | `Text_of_the_options_contains_no_value` |
+| The trailing slash not added | `Trailing_slash_is_optional` (2), `Valid_configuration_gives_the_options`, `Base_url_rules` (4 accepted rows) |
+| User information detected by `Uri.UserInfo` only | `Base_url_rules` (the bare `@` row) |
+| The query, the fragment, the scheme, and the `https` check each removed in turn | `Base_url_rules` (the rows for that check), `Message_never_contains_the_value` (its row); for `https` also `Http_outside_development_says_https_is_required` |
+| The secret not required | `Missing_or_blank_variable_fails` (3 secret rows), `Message_never_contains_the_value` (secret row) |
+| The timeout parsed with `NumberStyles.Integer`; a blank timeout taken as absent; the upper bound 121; the lower bound 0 | `Timeout_rules`: `+10` and ` 10 `; empty and whitespace; `121`; `0` |
+| The value written into the `http` message; into the timeout message | `Message_never_contains_the_value` (the `http` row; the two timeout rows) |
+| `Program.cs` passes `allowInsecureHttp: true`; passes `false` | `Http_base_url_fails_in_production_and_starts_in_development`, each time |
+| The options read lazily (a factory delegate instead of reading while registering) | `Invalid_koha_variable_stops_the_host` (4), `Http_base_url_fails_in_production_and_starts_in_development`; `Invalid_configuration_fails_while_registering`, `Insecure_http_flag_is_applied` (the refused row) |
+| A request sent through the `OAuth` client between `Build()` and `Run()`; a request sent through the `Api` client once the application started | `Starting_sends_nothing_to_koha` (2), each time |
+| The dummy Koha settings removed from `ApiTestHostFactory` | 133 of the 177 Api tests (every test that starts a host) |
+
 | Req | Proves (Given / When / Then) | Test (`Project::Class::Method`) | Seen failing | Result |
 | --- | --- | --- | --- | --- |
 | R1 (categories) | There are exactly seven categories. Validation, not found, and method not allowed are client-visible; the other four are masked. | `App::Errors.ApplicationErrorDefinitionTests::There_are_exactly_the_seven_categories_of_R1`; `::Is_client_visible_only_for_validation_not_found_and_method_not_allowed` | Visibility: against stubs. Seven categories: broken on purpose by adding an eighth category value; the test failed; restored | ✅ |
@@ -119,11 +157,11 @@ For pull request 2, "stubs" were Api types that compiled and let the host start 
 | R8a | Given a matched route, when a route or query value cannot be converted or a required query value is missing, then 400 `request.invalid`; a failed route constraint is 404 `not_found`; both environments. | `Api::Handlers.FrameworkErrorTests::Unconvertible_or_missing_parameter_is_request_invalid` (6), `::Route_constraint_mismatch_is_not_found` (2) | Against stubs; broken on purpose (`ThrowOnBadRequest` at the default) | ✅ |
 | R9 (registry) | Given definitions with a blank code, a duplicate code, a null definition, an undefined category, or none at all, when the registry is created, then it throws, naming the code where there is one and otherwise the problem. Given consistent definitions, it is created. Every `[ErrorDefinitions]` field, including a null one, reaches the check, and the registry checks the source that is registered. | `App::Errors.ApplicationErrorDefinitionRegistryTests::*` (6 tests, 12 cases); `App::Errors.ApplicationErrorDefinitionSourceTests::*` (4); `App::Extensions.ApplicationServiceCollectionExtensionsTests::Registry_checks_the_registered_source`, `::Inconsistent_registered_source_fails_when_the_registry_is_resolved` | Against stubs. `Inconsistent_registered_source_fails_when_the_registry_is_resolved` first passed for the wrong reason (no service registered); it was tightened to require the registry's own "empty" message, then failed against stubs. `Scan_ignores_unmarked_classes`: broken on purpose by removing the attribute filter from the scan; the test failed; restored | ✅ |
 | R9 (messages and startup) | Given messages that disagree with the definitions in any way `ER-011` lists, when the catalog is built, then it throws naming the code or the problem; keys are compared ordinally. Given an inconsistency, the host stops before serving a request; given consistent definitions and messages, it starts. | `Api::Factories.ErrorMessageCatalogFactoryTests::*` (3 tests, 18 cases); `Api::StartupTests::*` (2 tests, 4 cases) | Against stubs; broken on purpose (each check removed in turn; case-insensitive comparison; the startup check removed) | ✅ |
-| R10 | Missing or blank variable | — | not yet built (PR 3) | ⚠️ |
-| R11 | Base URL rules | — | not yet built (PR 3) | ⚠️ |
-| R12 | Timeout rules | — | not yet built (PR 3) | ⚠️ |
-| R13 | No value in a startup message | — | not yet built (PR 3) | ⚠️ |
-| R14 | No request to Koha at startup | — | not yet built (PR 3) | ⚠️ |
+| R10 | Given the base URL, the client id, or the client secret absent, empty, or only whitespace, when the application starts, then startup fails with a message naming that variable; the host stops before it starts. | `Koha::Factories.KohaOptionsFactoryTests::Missing_or_blank_variable_fails` (9); `Api::StartupTests::Invalid_koha_variable_stops_the_host` (4) | Against stubs; broken on purpose (the secret not required; the options read lazily) | ✅ |
+| R11 | Given a base URL that is not absolute, has another scheme, or has a query, fragment, or user information, startup fails naming the variable; `http` fails outside `Development`, saying `https` is required, and starts in `Development`; `https` starts; with or without a trailing slash the base is the same. | `Koha::Factories.KohaOptionsFactoryTests::Base_url_rules` (27), `::Http_outside_development_says_https_is_required`, `::Trailing_slash_is_optional` (4); `Api::StartupTests::Http_base_url_fails_in_production_and_starts_in_development` | Against stubs; broken on purpose (each check removed; the slash not added; user information by `UserInfo` only; `Program.cs` passing `true` or `false`) | ✅ |
+| R12 | Given the timeout absent, the deadline is 10 seconds; given 1 to 120 in ASCII digits, that many seconds; given anything else of the 16 listed values, startup fails naming the variable and the range. | `Koha::Factories.KohaOptionsFactoryTests::Timeout_rules` (16) | Against stubs; broken on purpose (`NumberStyles.Integer`, blank taken as absent, each bound moved by one) | ✅ |
+| R13 | Given any startup failure of R10 to R12, its exception text (inner exceptions included) contains the variable's name and none of the configured values; the options never write their values as text. | `Koha::Factories.KohaOptionsFactoryTests::Message_never_contains_the_value` (10); `Koha::Options.KohaOptionsTests::Text_of_the_options_contains_no_value`; `Api::StartupTests::Http_base_url_fails_in_production_and_starts_in_development` (no host name) | Against stubs; broken on purpose (the value written into two messages; `KohaOptions` a record) | ✅ |
+| R14 | Given valid configuration, when the host starts and serves a request, then no request is sent through any HTTP client, in `Development` and `Production`. | `Api::StartupTests::Starting_sends_nothing_to_koha` (2) | Passed against stubs (nothing contacted Koha); broken on purpose by sending a request through the `OAuth` client at startup, and through the `Api` client once started | ✅ |
 | R15 | The token request | — | not yet built (PR 4) | ⚠️ |
 | R16 | Token reply validation | — | not yet built (PR 4) | ⚠️ |
 | R17 | Token cache and refresh margin | — | not yet built (PR 4) | ⚠️ |
@@ -149,8 +187,8 @@ Supporting tests of pull request 1, not tied to one clause: `App::Errors.Applica
 | An exception is thrown after the response has started | dismissed | The status and headers are already sent and cannot be replaced; the exception is still logged at least once with the request's trace identifier; R5 does not apply |
 | `HEAD` or `OPTIONS` on a `GET` route | covered | R7: `Api::Handlers.FrameworkErrorTests::Wrong_method_is_405_with_allow_header` (`OPTIONS`), `::Head_on_wrong_method_is_405_with_allow_header` (status and `Allow`; see "HEAD" above) |
 | Kestrel rejects a request before routing (header too large, URI too long) | dismissed | Kestrel answers before any Minioasis code runs, so no middleware can shape the reply |
-| `MINIOASIS_KOHA_TIMEOUT_SECONDS` has a sign, leading zeros, spaces, non-ASCII digits, or overflows | covered | R12: not yet built (PR 3) |
-| Base URL with a query string, fragment, or user information | covered | R11: not yet built (PR 3) |
+| `MINIOASIS_KOHA_TIMEOUT_SECONDS` has a sign, leading zeros, spaces, non-ASCII digits, or overflows | covered | R12: `Koha::Factories.KohaOptionsFactoryTests::Timeout_rules` (`-5`, `+10`, `010`, ` 10 `, `１０`, `99999999999999999999`) |
+| Base URL with a query string, fragment, or user information | covered | R11: `Koha::Factories.KohaOptionsFactoryTests::Base_url_rules` (`?x=1`, `?`, `#x`, `#`, `u:p@`, `u@`, `@`) |
 | Koha's token endpoint returns 400 or 403 (wrong client id or secret) | covered | R20, token step: not yet built (PR 5) |
 | The token expires between the cache check and Koha's receipt of the request | covered | R19: not yet built (PR 5) |
 | Simultaneous token refresh after a 401 retry by several callers | covered | R18, R19: not yet built (PR 5) |
@@ -163,14 +201,14 @@ Supporting tests of pull request 1, not tied to one clause: `App::Errors.Applica
 | Must not reveal a provider name, internal code, exception, or diagnosis in a 500, 502, or 503 response | covered | R3: `Api::Writers.ErrorResponseTests::Server_failure_is_masked` (exact members and values). The masked categories are fixed by `App::Errors.ApplicationErrorDefinitionTests::Is_client_visible_only_for_validation_not_found_and_method_not_allowed` |
 | Must not return an error body in any shape other than Problem Details | covered | R2, R3, R6 to R8a: every test in `Api::Writers.ErrorResponseTests` and `Api::Handlers.FrameworkErrorTests` asserts the exact shape |
 | Must not log an access token, the client secret, an `Authorization` header, or a Koha response body | covered | R23: not yet built (PR 4, PR 5); also manual scenario M3 |
-| Must not write a configuration value into a startup error | covered | R13: not yet built (PR 3) |
+| Must not write a configuration value into a startup error | covered | R13: `Koha::Factories.KohaOptionsFactoryTests::Message_never_contains_the_value`, `Koha::Options.KohaOptionsTests::Text_of_the_options_contains_no_value` |
 | Must not send a non-`GET` request to Koha more than once | covered | R19: not yet built (PR 5) |
 | Must not retry a `GET` more than once | covered | R19: not yet built (PR 5) |
 | Must not request a token for every call while a valid token is cached | covered | R17: not yet built (PR 4) |
 | Must not send the token request through the client that attaches bearer tokens | covered | R15: not yet built (PR 4) |
 | Must not treat a caller's cancellation as a failure, or log it as an error | covered | R22: Api part `Api::Extensions.ApiErrorHandlingTests::Aborted_request_logs_no_error`; Koha part not yet built (PR 5) |
-| Must not contact Koha during startup | covered | R14: not yet built (PR 3) |
-| Must not start with an inconsistent error registry or invalid configuration | covered | R9 to R12. Registry: `App::Errors.ApplicationErrorDefinitionRegistryTests::*`. Messages and startup: `Api::Factories.ErrorMessageCatalogFactoryTests::Startup_check_rejects`, `Api::StartupTests::Inconsistent_definitions_or_messages_stop_the_host`. Configuration: not yet built (PR 3) |
+| Must not contact Koha during startup | covered | R14: `Api::StartupTests::Starting_sends_nothing_to_koha` |
+| Must not start with an inconsistent error registry or invalid configuration | covered | R9 to R12. Registry: `App::Errors.ApplicationErrorDefinitionRegistryTests::*`. Messages and startup: `Api::Factories.ErrorMessageCatalogFactoryTests::Startup_check_rejects`, `Api::StartupTests::Inconsistent_definitions_or_messages_stop_the_host`. Configuration: `Koha::Factories.KohaOptionsFactoryTests::*`, `Api::StartupTests::Invalid_koha_variable_stops_the_host`, `::Http_base_url_fails_in_production_and_starts_in_development` |
 | Must not call a real Koha from a test | dismissed | A process rule, not behavior: `CLAUDE.md`, Level 3, forbids it, and review enforces it |
 
 ## Wiring
@@ -186,6 +224,10 @@ Supporting tests of pull request 1, not tied to one clause: `App::Errors.Applica
 | `RouteHandlerOptions.ThrowOnBadRequest = false` | `AddApiErrorHandling()` | Every endpoint, in every environment | The `Development` rows of `Api::Handlers.FrameworkErrorTests::Unreadable_body_is_request_invalid` |
 | `RequestActivityListenerHostedService` | `AddRequestActivityListener()`, called by `AddApiErrorHandling()` (hosted service) | Started and stopped with the host | `Api::Hosting.TraceIdTests::Trace_id_present_when_logging_is_disabled` |
 | `IEndpointModule` registrations | None in production yet; the test host registers `TestEndpointModule` | `MapEndpointModules()`, called by `Program.cs` | Every test that reaches a `/test/` route |
+| `KohaOptions`, read and checked by `KohaOptionsFactory` | `AddKohaIntegration(configuration, allowInsecureHttp)`, `Minioasis.Koha/Shared/Extensions/KohaServiceCollectionExtensions.cs` (one instance, read while registering), called by `Program.cs` with `builder.Environment.IsDevelopment()` | Not yet: the token provider (PR 4) and the deadline handler (PR 5) | `Koha::Extensions.KohaServiceCollectionExtensionsTests::Registers_the_checked_options_as_one_instance`, `::Invalid_configuration_fails_while_registering`, `::Insecure_http_flag_is_applied`; `Api::StartupTests::Invalid_koha_variable_stops_the_host`, `::Http_base_url_fails_in_production_and_starts_in_development` |
+| Named clients `KohaClientNames.OAuth` and `KohaClientNames.Api` (`HttpClient.Timeout` infinite; no handlers yet) | `AddKohaIntegration` | Not yet: the token provider (PR 4) and the first capability (spec 003) | `Koha::Extensions.KohaServiceCollectionExtensionsTests::Registers_the_named_client` (2) |
+| Generated `GeneratedKohaOAuthClient` | Not registered: the token provider creates it on the `OAuth` client and sets its `BaseUrl` (plan, PR 4) | Not yet (PR 4) | Compiles in `Minioasis.Koha`; no test until PR 4 |
+| Dummy Koha settings in the test host | `ApiTestHostFactory`, applied with `UseSetting` before per-host settings | Every Api test that starts a host | Removing them fails 133 Api tests |
 | `DependencyErrorDefinitions.ForKohaOutcome` | Not registered (static selection) | Not yet: the first capability's use case (spec 003), as `plan.md`, "Risks", states | `App::Errors.DependencyErrorDefinitionsTests::*` |
 
 ## Checks
@@ -195,6 +237,7 @@ Supporting tests of pull request 1, not tied to one clause: `App::Errors.Applica
 | `beb848d` | 2026-11-20 | passed | 47 / 47 (`Minioasis.Application.Tests`; the Api and Koha test projects hold no tests yet) |
 | `a0d557e` | 2026-11-20 | passed | 219 / 219 (52 `Minioasis.Application.Tests`, 167 `Minioasis.Api.Tests`; the Koha test project holds no tests yet) |
 | review fixes (B1, N1, N2) | 2026-11-20 | passed | 222 / 222 (52 `Minioasis.Application.Tests`, 170 `Minioasis.Api.Tests`) |
+| `4bc4d3c` (pull request 3) | 2026-11-20 | passed | 307 / 307 (52 `Minioasis.Application.Tests`, 78 `Minioasis.Koha.Tests`, 177 `Minioasis.Api.Tests`) |
 
 ## Independent verification
 
