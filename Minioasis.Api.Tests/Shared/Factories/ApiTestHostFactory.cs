@@ -9,10 +9,13 @@ namespace Minioasis.Api.Tests.Shared.Factories;
 
 /// <summary>
 /// The one Api test host (TS-009). Each instance has its own settings, environment, log capture, test endpoints,
-/// and service overrides.
+/// and service overrides. It supplies dummy Koha settings, so that the host starts without a Koha (TS-008).
 /// </summary>
 /// <param name="configureServices">Overrides applied after the application's own registrations.</param>
-/// <param name="settings">Settings for this host only, applied with <c>UseSetting</c>.</param>
+/// <param name="settings">
+/// Settings for this host only, applied with <c>UseSetting</c> after the dummy Koha settings, so they replace them and
+/// are visible before <c>Program.cs</c> reads them.
+/// </param>
 /// <param name="environment">The host environment name.</param>
 /// <param name="logging">Whether any logger provider is registered; when false, nothing is logged anywhere.</param>
 public sealed class ApiTestHostFactory(
@@ -21,6 +24,14 @@ public sealed class ApiTestHostFactory(
     string environment = "Production",
     bool logging = true) : WebApplicationFactory<Program>
 {
+    // Dummy Koha settings (TS-008): the host starts, and nothing reaches a Koha (spec 001, R14).
+    private static readonly Dictionary<string, string?> DummyKohaSettings = new()
+    {
+        ["MINIOASIS_KOHA_BASE_URL"] = "https://koha.test/api/v1",
+        ["MINIOASIS_KOHA_CLIENT_ID"] = "dummy-client-id",
+        ["MINIOASIS_KOHA_CLIENT_SECRET"] = "dummy-client-secret",
+    };
+
     public RecordingLoggerProvider Logs { get; } = new();
 
     public TestEndpointModule TestEndpoints { get; } = new();
@@ -28,7 +39,7 @@ public sealed class ApiTestHostFactory(
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(environment);
-        foreach (var (key, value) in settings ?? new Dictionary<string, string?>())
+        foreach (var (key, value) in DummyKohaSettings.Concat(settings ?? new Dictionary<string, string?>()))
         {
             builder.UseSetting(key, value);
         }
