@@ -103,6 +103,7 @@ public sealed class KohaServiceCollectionExtensionsTests
 
     // TS-005, EX-007, R15: the token provider resolves from the registration as one instance (one cache, one shared
     // request), and sends its request through the OAuth client to the configured base, never through the Api client.
+    // The request, as the registered OAuth client sends it, carries no Authorization header.
     [Fact]
     public async Task Registers_the_token_provider_on_the_oauth_client()
     {
@@ -119,7 +120,11 @@ public sealed class KohaServiceCollectionExtensionsTests
 
         Assert.Same(tokens, provider.GetRequiredService<KohaAccessTokenProvider>());
         Assert.Equal("wired-token", token);
-        Assert.Equal("https://koha.test/api/v1/oauth/token", Assert.Single(oauth.Requests).Uri?.AbsoluteUri);
+        var request = Assert.Single(oauth.Requests);
+        Assert.Equal("https://koha.test/api/v1/oauth/token", request.Uri?.AbsoluteUri);
+        Assert.DoesNotContain(
+            request.Headers,
+            header => string.Equals(header.Key, "Authorization", StringComparison.OrdinalIgnoreCase));
         Assert.Empty(api.Requests);
     }
 
