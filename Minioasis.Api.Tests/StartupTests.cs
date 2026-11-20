@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Http;
 using Minioasis.Api.Shared.Models;
 using Minioasis.Api.Tests.Shared.Factories;
 using Minioasis.Api.Tests.Shared.TestDoubles;
 using Minioasis.Application.Shared.Errors;
+using Minioasis.Koha.Shared.Exceptions;
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -38,6 +40,63 @@ public sealed class StartupTests
         Assert.Contains(named, exception.Message, StringComparison.Ordinal);
     }
 
+    // R10: a blank required Koha variable stops the host before it starts, naming the variable.
+    [Theory]
+    [InlineData("MINIOASIS_KOHA_BASE_URL", "")]
+    [InlineData("MINIOASIS_KOHA_CLIENT_ID", "   ")]
+    [InlineData("MINIOASIS_KOHA_CLIENT_SECRET", "")]
+    [InlineData("MINIOASIS_KOHA_CLIENT_SECRET", "   ")]
+    public async Task Invalid_koha_variable_stops_the_host(string variable, string value)
+    {
+        await using var factory = new ApiTestHostFactory(
+            settings: new Dictionary<string, string?> { [variable] = value });
+
+        var exception = Assert.Throws<KohaConfigurationException>(() => factory.CreateClient());
+
+        Assert.Contains(variable, exception.Message, StringComparison.Ordinal);
+    }
+
+    // R11, D5: Program.cs passes the Development flag, so plain http stops the host in every other environment
+    // (Production, Staging) and starts it in Development.
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    public async Task Http_base_url_fails_in_production_and_starts_in_development(string nonDevelopment)
+    {
+        var settings = new Dictionary<string, string?> { ["MINIOASIS_KOHA_BASE_URL"] = "http://koha.test/api/v1" };
+        await using var refused = new ApiTestHostFactory(settings: settings, environment: nonDevelopment);
+        await using var development = new ApiTestHostFactory(settings: settings, environment: "Development");
+
+        var exception = Assert.Throws<KohaConfigurationException>(() => refused.CreateClient());
+        using var client = development.CreateClient();
+        using var response = await client.GetAsync("/does-not-exist", TestContext.Current.CancellationToken);
+
+        Assert.Contains("MINIOASIS_KOHA_BASE_URL", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("https is required", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("koha.test", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // R14, D6: starting the host sends no request through any HTTP client. The recording handler replaces the primary
+    // handler of every named client and knows nothing about Koha (TS-003).
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Development")]
+    public async Task Starting_sends_nothing_to_koha(string environment)
+    {
+        using var recorder = new RecordingHandler();
+        await using var factory = new ApiTestHostFactory(
+            services => services.ConfigureAll<HttpClientFactoryOptions>(options =>
+                options.HttpMessageHandlerBuilderActions.Add(builder => builder.PrimaryHandler = recorder)),
+            environment: environment);
+
+        using var client = factory.CreateClient();
+        using var response = await client.GetAsync("/does-not-exist", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(0, recorder.Count);
+    }
+
     private static void Break(IServiceCollection services, string inconsistency)
     {
         switch (inconsistency)
@@ -63,5 +122,22 @@ public sealed class StartupTests
     {
         services.RemoveAll<ErrorMessageSource>();
         services.AddSingleton(source);
+    }
+
+    // Records every request it receives and answers each one with 200, so a request at startup is counted rather
+    // than sent anywhere.
+    private sealed class RecordingHandler : HttpMessageHandler
+    {
+        private int count;
+
+        public int Count => Volatile.Read(ref count);
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref count);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        }
     }
 }
