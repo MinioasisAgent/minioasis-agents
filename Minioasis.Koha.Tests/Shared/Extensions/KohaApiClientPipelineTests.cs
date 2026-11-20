@@ -258,6 +258,52 @@ public sealed class KohaApiClientPipelineTests
         Assert.Single(tokens.Requests);
     }
 
+    // R18: each caller's own deadline ends only that caller's wait. Caller A's call gets a 401 after 6 seconds and
+    // starts the request for a new token; caller B joins that request at 7 seconds. At 10 seconds A's deadline ends
+    // A's wait with "unavailable", while the token request goes on for B. Koha replies at 11 seconds, and B completes
+    // its call with the new token, inside its own deadline.
+    [Fact]
+    public async Task Caller_deadline_ends_only_that_callers_wait()
+    {
+        var newToken = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstReply = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tokens = new StubHttpMessageHandler(async (request, cancellationToken) => request.Index switch
+        {
+            0 => Token("token-1"),
+            _ => await newToken.Task.WaitAsync(cancellationToken),
+        });
+        var api = new StubHttpMessageHandler(async (request, _) => request.Index switch
+        {
+            0 => await firstReply.Task,
+            _ => new HttpResponseMessage(HttpStatusCode.OK),
+        });
+        using var harness = new KohaClientsHarness(tokens, api);
+        var client = harness.CreateApiClient();
+
+        var a = GetAsync(client, TestCancellation);
+        await api.WaitForRequestsAsync(1);
+        harness.Time.Advance(TimeSpan.FromSeconds(6));
+        firstReply.SetResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        await tokens.WaitForRequestsAsync(2);
+        harness.Time.Advance(TimeSpan.FromSeconds(1));
+        var b = GetAsync(client, TestCancellation);
+        harness.Time.Advance(TimeSpan.FromSeconds(3));
+
+        var exception = await Assert.ThrowsAsync<KohaUnavailableException>(() => a.WaitAsync(Wait, TestCancellation));
+        Assert.Null(exception.KohaStatus);
+        Assert.False(b.IsCompleted);
+        Assert.False(tokens.Requests[1].CancellationToken.IsCancellationRequested);
+
+        harness.Time.Advance(TimeSpan.FromSeconds(1));
+        newToken.SetResult(Token("token-2"));
+        using var response = await b.WaitAsync(Wait, TestCancellation);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Bearer token-2", Authorization(api.Requests[1]));
+        Assert.Equal(2, api.Requests.Count);
+        Assert.Equal(2, tokens.Requests.Count);
+    }
+
     // R22: when the caller's cancellation and the deadline's expiry coincide, the caller's cancellation wins.
     [Fact]
     public async Task Caller_cancellation_wins_when_it_coincides_with_the_deadline()
