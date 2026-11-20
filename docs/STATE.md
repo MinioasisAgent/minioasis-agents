@@ -9,17 +9,17 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Next: build, in the five pull requests the plan lists.
+- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Being built in the five pull requests the plan lists; pull request 1 (the Application error model) is #5.
 
 ## What exists
 
 - **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), and the pinned NSwag client generator (`dotnet-tools.json`, `nswag.json`).
 - **The foundation:** `minioasis.slnx` and the six projects that ADR 0003 decides (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`, and a `.Tests` project for each), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
-- **No behavior and no test.** Spec 001 is approved; its plan is next. `Minioasis.Api` starts an empty host with no endpoints. Everything else is written from the start, under these rules.
+- **The Application error model** of spec 001: error categories, definitions, the registry and its checks, results, `DependencyFailureOutcome`, `AddApplication()`, and their tests. No endpoint and no Koha code yet; `Minioasis.Api` starts an empty host. Everything else is written from the start, under these rules.
 
 ## Next
 
-- The first spec. The maintainer chooses it; the roadmap proposes an order.
+- Spec 001, plan pull request 2: the API error contract.
 
 ## Recent decisions
 
