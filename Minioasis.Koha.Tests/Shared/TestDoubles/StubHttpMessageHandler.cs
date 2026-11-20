@@ -48,6 +48,16 @@ public sealed class StubHttpMessageHandler(
         };
 
     /// <summary>
+    /// A reply whose headers arrive at once and whose body sends its first bytes and then stalls until the read is
+    /// cancelled, as a slow Koha would (R21).
+    /// </summary>
+    public static HttpResponseMessage StallingBodyReply(HttpStatusCode status) =>
+        new(status)
+        {
+            Content = new StallingContent()
+        };
+
+    /// <summary>
     /// A reply that has already arrived in full: its body is read to the end even when the request has been cancelled
     /// in the meantime, as when the last bytes were received just before the cancellation.
     /// </summary>
@@ -129,6 +139,27 @@ public sealed class StubHttpMessageHandler(
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             new BrokenStream().CopyToAsync(stream);
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    private sealed class StallingContent : HttpContent
+    {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            SerializeToStreamAsync(stream, context, CancellationToken.None);
+
+        protected override async Task SerializeToStreamAsync(
+            Stream stream,
+            TransportContext? context,
+            CancellationToken cancellationToken)
+        {
+            await stream.WriteAsync(Encoding.UTF8.GetBytes("""{"partial":"""), cancellationToken);
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        }
 
         protected override bool TryComputeLength(out long length)
         {
