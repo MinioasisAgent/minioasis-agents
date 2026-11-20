@@ -1,9 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
+using Minioasis.Koha.Authentication.Providers;
 using Minioasis.Koha.Shared.Clients;
 using Minioasis.Koha.Shared.Exceptions;
 using Minioasis.Koha.Shared.Extensions;
 using Minioasis.Koha.Shared.Options;
+using Minioasis.Koha.Tests.Shared.TestDoubles;
+using System.Net;
 using Xunit;
 
 namespace Minioasis.Koha.Tests.Shared.Extensions;
@@ -95,6 +99,59 @@ public sealed class KohaServiceCollectionExtensionsTests
         }
     }
 
+    // TS-005, EX-007, R15: the token provider resolves from the registration as one instance (one cache, one shared
+    // request), and sends its request through the OAuth client to the configured base, never through the Api client.
+    [Fact]
+    public async Task Registers_the_token_provider_on_the_oauth_client()
+    {
+        var oauth = new StubHttpMessageHandler(() => Token("wired-token", 3600));
+        var api = new StubHttpMessageHandler(() => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var services = new ServiceCollection().AddKohaIntegration(ValidConfiguration(), allowInsecureHttp: false);
+        services.AddHttpClient(KohaClientNames.OAuth).ConfigurePrimaryHttpMessageHandler(() => oauth);
+        services.AddHttpClient(KohaClientNames.Api).ConfigurePrimaryHttpMessageHandler(() => api);
+        using var provider = services.BuildServiceProvider(Validating);
+
+        var tokens = provider.GetRequiredService<KohaAccessTokenProvider>();
+        var token = await tokens.GetTokenAsync(TestContext.Current.CancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        Assert.Same(tokens, provider.GetRequiredService<KohaAccessTokenProvider>());
+        Assert.Equal("wired-token", token);
+        Assert.Equal("https://koha.test/api/v1/oauth/token", Assert.Single(oauth.Requests).Uri?.AbsoluteUri);
+        Assert.Empty(api.Requests);
+    }
+
+    // Plan, "Approach": TimeProvider.System is registered when no time provider is.
+    [Fact]
+    public void Registers_the_system_time_provider()
+    {
+        using var provider = new ServiceCollection()
+            .AddKohaIntegration(ValidConfiguration(), allowInsecureHttp: false)
+            .BuildServiceProvider(Validating);
+
+        Assert.Same(TimeProvider.System, provider.GetRequiredService<TimeProvider>());
+    }
+
+    // Plan, "Approach": a time provider registered before is kept, and the token provider measures token lifetimes
+    // with it (R17).
+    [Fact]
+    public async Task Keeps_a_registered_time_provider()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 11, 20, 9, 0, 0, TimeSpan.Zero));
+        var oauth = new StubHttpMessageHandler(
+            (request, _) => Task.FromResult(Token($"token-{request.Index + 1}", 3600)));
+        var services = new ServiceCollection().AddSingleton<TimeProvider>(time);
+        services.AddKohaIntegration(ValidConfiguration(), allowInsecureHttp: false);
+        services.AddHttpClient(KohaClientNames.OAuth).ConfigurePrimaryHttpMessageHandler(() => oauth);
+        using var provider = services.BuildServiceProvider(Validating);
+        var tokens = provider.GetRequiredService<KohaAccessTokenProvider>();
+
+        Assert.Same(time, provider.GetRequiredService<TimeProvider>());
+        Assert.Equal("token-1", await GetTokenAsync(tokens));
+        time.Advance(TimeSpan.FromSeconds(3600 - 30));
+        Assert.Equal("token-2", await GetTokenAsync(tokens));
+    }
+
     [Fact]
     public void Null_arguments_throw()
     {
@@ -106,6 +163,15 @@ public sealed class KohaServiceCollectionExtensionsTests
         Assert.Equal("services", services.ParamName);
         Assert.Equal("configuration", configuration.ParamName);
     }
+
+    private static Task<string> GetTokenAsync(KohaAccessTokenProvider tokens) =>
+        tokens.GetTokenAsync(TestContext.Current.CancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+    private static HttpResponseMessage Token(string accessToken, int lifetimeSeconds) =>
+        StubHttpMessageHandler.Reply(
+            HttpStatusCode.OK,
+            $$"""{"access_token":"{{accessToken}}","token_type":"Bearer","expires_in":{{lifetimeSeconds}}}""");
 
     private static IConfiguration ValidConfiguration() => Configuration(new Dictionary<string, string?>
     {
