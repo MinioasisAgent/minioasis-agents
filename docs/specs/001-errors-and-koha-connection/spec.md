@@ -3,7 +3,7 @@
 
 # 001 — API errors and Koha connection
 
-- **Status:** draft
+- **Status:** reviewed
 - **Kind:** internal
 - **Related:** ADR 0003; `ER-001` to `ER-011` in `docs/best-practices/errors.md`; `EX-004` to `EX-013` in `docs/best-practices/external-systems.md`. This spec combines ROADMAP items 001 (API error contract) and 002 (Koha connection) at the maintainer's request.
 
@@ -115,7 +115,7 @@ A "protected call" is any request a capability sends to Koha through the shared 
 | --- | --- | --- |
 | A message placeholder has no supplied value, or a value is supplied for no placeholder | covered | R2 |
 | The request carries a valid `traceparent` header | dismissed | Whether the incoming trace is continued does not change the contract: R4 still holds for the response and the log |
-| An exception is thrown after the response has started | dismissed | The status and headers are already sent and cannot be replaced; the exception is still logged at least once with the `traceId`; R5's count of exactly one does not apply |
+| An exception is thrown after the response has started | dismissed | The status and headers are already sent and cannot be replaced; the exception is still logged at least once with the request's trace identifier; R5 does not apply |
 | `HEAD` or `OPTIONS` on a `GET` route | covered | R7: answered 405 unless the route accepts the method |
 | Kestrel rejects a request before routing (header too large, URI too long) | dismissed | Kestrel answers before any Minioasis code runs, so no middleware can shape the reply |
 | `MINIOASIS_KOHA_TIMEOUT_SECONDS` has a sign, leading zeros, spaces, non-ASCII digits, or overflows | covered | R12 |
