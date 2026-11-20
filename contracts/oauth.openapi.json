@@ -1,0 +1,125 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Koha REST API: OAuth token",
+    "version": "1",
+    "description": "Focused contract for spec 001. Copies the operation tokenOAuth (POST /oauth/token) and the error schema faithfully from contracts/official_koha_openapi.json (EX-002).",
+    "license": {
+      "name": "GPL v3,",
+      "url": "http://www.gnu.org/licenses/gpl.txt"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Handle OAuth flows\n",
+      "name": "oauth",
+      "x-displayName": "OAuth"
+    }
+  ],
+  "paths": {
+    "/oauth/token": {
+      "post": {
+        "x-mojo-to": "OAuth#token",
+        "operationId": "tokenOAuth",
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Get access token",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_type": {
+                    "description": "grant type (client_credentials)",
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "description": "client id",
+                    "type": "string"
+                  },
+                  "client_secret": {
+                    "description": "client secret",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "grant_type"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string"
+                    },
+                    "expires_in": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "description": "Error message",
+            "type": "string"
+          },
+          "error_code": {
+            "description": "Error code",
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}
