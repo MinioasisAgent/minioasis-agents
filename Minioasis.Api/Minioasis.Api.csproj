@@ -11,4 +11,11 @@
     <ProjectReference Include="../Minioasis.Koha/Minioasis.Koha.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Embedded, so that publish and tests read the same bytes (spec 001, plan). WithCulture="false" keeps the
+         ".en" in the name from moving it into a satellite assembly. -->
+    <Content Remove="Resources/errors.en.json" />
+    <EmbeddedResource Include="Resources/errors.en.json" LogicalName="Minioasis.Api.Resources.errors.en.json" WithCulture="false" />
+  </ItemGroup>
+
 </Project>

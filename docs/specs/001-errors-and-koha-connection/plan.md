@@ -231,4 +231,13 @@ All coding goes to `coder-heavy`: it touches the error contract, authentication,
 
 ## Deviations
 
-None.
+Pull request 2 (Api error contract), fixes made without asking under `docs/workflow/implementation.md`:
+
+- **`WithCulture="false"` on the embedded resource** (a blocker). The `.en` in `errors.en.json` made MSBuild treat the file as an `en` culture resource and move it into a satellite assembly, so the main assembly had no resource. The item in `Minioasis.Api.csproj` now says it has no culture; the resource name stays `Minioasis.Api.Resources.errors.en.json`.
+- **`app.UseRouting()` after the error middleware in `Program.cs`** (a correctness piece of R3 and R5). Without it, `WebApplication` adds routing before the exception handler, and an exception thrown by routing itself (for example an ambiguous match) escapes the masked response. Tested by an ambiguous test route in `Server_failure_is_masked` and `Exception_logs_one_error_across_all_categories`.
+- **One more file in `Minioasis.Api`:** `Shared/Models/ErrorMessage.cs`, the title and detail of one message, which the catalog, the provider, and the factory share (`AR-010`).
+- **The mapper's shape.** `ApplicationResultHttpMapper.Map(result, onSuccess)` leaves a success response to the endpoint, because a success status is each capability's own decision; `MapError(error)` serves the status-code handler; the static `GetStatus(category)` is the one R1 table, which the writer also uses for an unhandled exception.
+- **Three more test files in `Minioasis.Api.Tests`:** `Shared/TestDoubles/TestRequests.cs` (the named framework-error requests that two test classes share), `Shared/TestDoubles/ProblemResponseAssert.cs` (the exact R2 and R3 shape assertions that every Api test class shares), and `Shared/Hosting/ListenerFreeCollection.cs` (the xUnit definition of the non-parallel collection that the R4 logging-off test needs) (`TS-011`).
+- **`HEAD`.** The spec change for `HEAD` (pull request #4) is not accepted yet, so the writer writes the body for `HEAD` as the approved spec says, with the decision in one place in `ErrorResponseWriter`. The `HEAD` tests assert the status and `Allow` only: `FrameworkErrorTests::Head_on_unknown_path_is_not_found` and `::Head_on_wrong_method_is_405_with_allow_header` replace the planned body assertions.
+- **Test names.** `StartupTests::Inconsistent_messages_stop_the_host` is `Inconsistent_definitions_or_messages_stop_the_host`, because it also stops the host for an empty registry.
+- **No dummy Koha settings in the test host yet.** Nothing reads them until pull request 3, which adds them with `AddKohaIntegration`; the host already applies per-host settings with `UseSetting`.

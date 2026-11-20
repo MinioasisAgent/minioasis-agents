@@ -90,4 +90,12 @@ public sealed class ApplicationErrorDefinitionRegistryTests
 
         Assert.Contains("empty", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void Null_source_throws()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => new ApplicationErrorDefinitionRegistry(null!));
+
+        Assert.Equal("source", exception.ParamName);
+    }
 }

@@ -35,7 +35,7 @@ Each test run prints a warning that `VSTEST_ARTIFACTS_DIRECTORY` was not found a
 dotnet run --project Minioasis.Api
 ```
 
-The API has no endpoints yet: every request is answered with 404.
+The API has no endpoints yet: every request is answered with 404 and the error body of spec 001 (code `not_found`, a `traceId`). It refuses to start when its error definitions and `Minioasis.Api/Resources/errors.en.json` disagree, and says which code is wrong.
 
 ## Generate a Koha client
 
