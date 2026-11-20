@@ -7,7 +7,7 @@
 - **Verified at commit:** `fc6e4d9` (the code and tests; this record and the status change follow in the next commit)
 - **Transfer branch:** `ready/001-errors-and-koha-connection`, created at the `master` commit that merges this record
 
-The spec is built in the five pull requests of `plan.md`, "Pull request breakdown". This record covers all five: pull request 1, "Application error model", pull request 2, "Api error contract", pull request 3, "Koha configuration and generated client", pull request 4, "Token provider", and pull request 5, "Handlers and failure mapping". Every clause of R1 to R23 is built, and the record is ready for independent verification.
+The spec is built in the five pull requests of `plan.md`, "Pull request breakdown". This record covers all five: pull request 1, "Application error model", pull request 2, "Api error contract", pull request 3, "Koha configuration and generated client", pull request 4, "Token provider", and pull request 5, "Handlers and failure mapping". Every clause of R1 to R23 is built, and it was verified on 2026-11-20 (see "Independent verification").
 
 Test names are written `Project::Class::Method`, with `App` for `Minioasis.Application.Tests`, `Api` for `Minioasis.Api.Tests`, `Koha` for `Minioasis.Koha.Tests`, and the class's folder under `Shared/` or `Authentication/` (`Api::StartupTests` is at the project root). A number in brackets is the number of theory cases.
 
