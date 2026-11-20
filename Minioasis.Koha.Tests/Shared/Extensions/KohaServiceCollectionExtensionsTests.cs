@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using Minioasis.Koha.Authentication.Handlers;
 using Minioasis.Koha.Authentication.Providers;
 using Minioasis.Koha.Shared.Clients;
 using Minioasis.Koha.Shared.Exceptions;
 using Minioasis.Koha.Shared.Extensions;
+using Minioasis.Koha.Shared.Handlers;
 using Minioasis.Koha.Shared.Options;
 using Minioasis.Koha.Tests.Shared.TestDoubles;
 using System.Net;
@@ -119,6 +121,34 @@ public sealed class KohaServiceCollectionExtensionsTests
         Assert.Equal("wired-token", token);
         Assert.Equal("https://koha.test/api/v1/oauth/token", Assert.Single(oauth.Requests).Uri?.AbsoluteUri);
         Assert.Empty(api.Requests);
+    }
+
+    // TS-005, EX-007, R18, R21, plan "Approach": the OAuth client has the deadline handler and no bearer handler; the
+    // API client has the deadline handler, then the bearer handler, so one deadline covers the token step, the call,
+    // and the retry. Both primary handlers are SocketsHttpHandler with automatic redirects off, so a 3xx is a final
+    // reply (R20) and no request is sent again to another address (R15, R19, EX-010).
+    [Theory]
+    [InlineData(KohaClientNames.OAuth, new[] { typeof(KohaDeadlineHandler) })]
+    [InlineData(KohaClientNames.Api, new[] { typeof(KohaDeadlineHandler), typeof(KohaBearerHandler) })]
+    public void Registers_clients_and_handler_order(string name, Type[] expected)
+    {
+        using var provider = new ServiceCollection()
+            .AddKohaIntegration(ValidConfiguration(), allowInsecureHttp: false)
+            .BuildServiceProvider(Validating);
+
+        var chain = new List<HttpMessageHandler>();
+        HttpMessageHandler? handler = provider.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler(name);
+        while (handler is not null)
+        {
+            chain.Add(handler);
+            handler = (handler as DelegatingHandler)?.InnerHandler;
+        }
+
+        Assert.Equal(
+            expected,
+            chain.Select(item => item.GetType()).Where(type => type.Namespace!.StartsWith("Minioasis.", StringComparison.Ordinal)));
+        var primary = Assert.IsType<SocketsHttpHandler>(chain[^1]);
+        Assert.False(primary.AllowAutoRedirect);
     }
 
     // Plan, "Approach": TimeProvider.System is registered when no time provider is.
