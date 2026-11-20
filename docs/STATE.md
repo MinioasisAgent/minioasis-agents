@@ -9,13 +9,13 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- None.
+- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Next: the plan.
 
 ## What exists
 
 - **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), and the pinned NSwag client generator (`dotnet-tools.json`, `nswag.json`).
 - **The foundation:** `minioasis.slnx` and the six projects that ADR 0003 decides (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`, and a `.Tests` project for each), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
-- **No behavior, no test, and no spec.** `Minioasis.Api` starts an empty host with no endpoints. Everything else is written from the start, under these rules.
+- **No behavior and no test.** Spec 001 is approved; its plan is next. `Minioasis.Api` starts an empty host with no endpoints. Everything else is written from the start, under these rules.
 
 ## Next
 

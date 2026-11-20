@@ -92,7 +92,7 @@ var httpClient = httpClientFactory.CreateClient(KohaClientNames.Api);
 
 Minioasis signs in to Koha as a service account. Give that account only the Koha permissions that approved specs list. A wider permission is a larger loss if the credentials leak.
 
-Credentials are read at run time through ASP.NET configuration, from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`. Real values never enter source control or diagnostic output (`ER-008`).
+Credentials are read at run time through ASP.NET configuration, from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`. The optional `MINIOASIS_KOHA_TIMEOUT_SECONDS` sets the deadline of `EX-011` (spec 001). Real values never enter source control or diagnostic output (`ER-008`).
 
 ```jsonc
 // BAD: appsettings.json, committed
@@ -272,19 +272,24 @@ var response = await httpClient.SendAsync(request, cancellationToken);
 
 <a id="EX-013"></a>
 
-## EX-013 Report a failure to get a token as an authentication failure
+## EX-013 Report a refused token request as an authentication failure, and an unreachable Koha as unavailable
 
-Whatever stops Minioasis from getting a token, the outcome is the same and is reported the same way: a network failure, a timeout, an error status, a response that cannot be read, or a response that fails validation (`EX-008`). Each becomes an authentication failure, which the API answers with a masked 500 (`ER-004`, `ER-006`). The one exception is the caller cancelling, which stays a cancellation (`ER-009`).
+When Koha refuses or garbles the token request, the outcome is the same and is reported the same way: an error status, a response that was received but cannot be parsed, or a response that fails validation (`EX-008`). Each becomes an authentication failure, which the API answers with a masked 500 (`ER-004`, `ER-006`). When Koha cannot be reached at all during the token request (a network failure, the deadline, 429, or a 5xx status), the outcome is "unavailable", a masked 503, the same as for any other Koha call (spec 001, D6 and R20), because the cause is Koha's availability, not Minioasis's credentials. The one exception is the caller cancelling, which stays a cancellation (`ER-009`).
 
 ```csharp
 // BAD: a network error while getting a token escapes as an unhandled exception,
-// or is reported as "Koha unavailable" for one cause and "authentication failed" for another
+// or a refused request is reported as "Koha unavailable"
 
-// GOOD: one outcome for every cause
+// GOOD: Koha could not be reached, so it is unavailable
 catch (HttpRequestException exception)
 {
-    logger.LogError("Koha OAuth endpoint could not be reached");
-    throw new KohaAuthenticationException("Koha OAuth token acquisition failed.", exception);
+    throw new KohaUnavailableException("Koha OAuth endpoint could not be reached.", exception);
+}
+
+// GOOD: Koha answered and refused, so authentication failed
+if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+{
+    throw new KohaAuthenticationException("Koha OAuth token request was refused.");
 }
 ```
 
