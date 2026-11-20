@@ -69,4 +69,13 @@ public sealed class ApplicationServiceCollectionExtensionsTests
 
         Assert.Contains("empty", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void Null_services_throw()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => ApplicationServiceCollectionExtensions.AddApplication(null!));
+
+        Assert.Equal("services", exception.ParamName);
+    }
 }
