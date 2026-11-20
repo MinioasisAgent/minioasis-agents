@@ -9,7 +9,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Being built in the five pull requests the plan lists: pull request 1 (the Application error model) merged as #5; pull request 2 (the Api error contract) merged as #6; pull request 3 (Koha configuration and the generated OAuth client) is on the branch `ai/sprint/001-koha-config`.
+- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Being built in the five pull requests the plan lists: pull request 1 (the Application error model) merged as #5; pull request 2 (the Api error contract) merged as #6; pull request 3 (Koha configuration and the generated OAuth client) merged as #7; pull request 4 (the token provider) is on the branch `ai/sprint/001-koha-token`.
 
 ## What exists
 
@@ -17,11 +17,12 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 - **The foundation:** `minioasis.slnx` and the six projects that ADR 0003 decides (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`, and a `.Tests` project for each), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
 - **The Application error model** of spec 001: error categories, definitions, the registry and its checks, results, `DependencyFailureOutcome`, `AddApplication()`, and their tests.
 - **The Api error contract** of spec 001: every error response has the Problem Details shape with `code` and `traceId`; server failures are masked and logged once with the trace identifier; ASP.NET's own 404, 405, 400, 413, and 415 are shaped; `errors.en.json` is embedded and checked against the definitions at startup; endpoints come from `IEndpointModule` registrations. The shared Api test host (`ApiTestHostFactory`) exists, with dummy Koha settings. No production endpoint yet: every request to the running API is a 404 `not_found`. Everything else is written from the start, under these rules.
-- **The Koha configuration** of spec 001: `AddKohaIntegration` reads and checks `MINIOASIS_KOHA_BASE_URL`, `_CLIENT_ID`, `_CLIENT_SECRET`, and the optional `_TIMEOUT_SECONDS` when the application starts, and refuses to start on a bad value, naming the variable (`https` required outside `Development`). It registers the options and the two named clients, `OAuth` and `Api`, without handlers yet. Nothing contacts Koha. The focused contract `contracts/oauth.openapi.json` and its generated client (`Minioasis.Koha/Generated/OAuth`) exist; nothing uses the client yet. The variables and the generation command are in `docs/running.md`.
+- **The Koha configuration** of spec 001: `AddKohaIntegration` reads and checks `MINIOASIS_KOHA_BASE_URL`, `_CLIENT_ID`, `_CLIENT_SECRET`, and the optional `_TIMEOUT_SECONDS` when the application starts, and refuses to start on a bad value, naming the variable (`https` required outside `Development`). It registers the options and the two named clients, `OAuth` and `Api`, without handlers yet. Nothing contacts Koha at startup. The focused contract `contracts/oauth.openapi.json` and its generated client (`Minioasis.Koha/Generated/OAuth`) exist. The variables and the generation command are in `docs/running.md`.
+- **The Koha token provider** of spec 001: `KohaAccessTokenProvider` requests a token with the client-credentials grant through the generated client on the `OAuth` client, checks the reply, caches it until 30 seconds before it expires, shares one request among callers that need a new token at the same moment (a caller's cancellation ends only its own wait; the request is cancelled when no caller waits), and discards a named token on `Invalidate`. Token-step failures are `KohaAuthenticationException` or `KohaUnavailableException`, with Koha's status and never its body. `AddKohaIntegration` registers it, and `TimeProvider.System` unless a time provider is registered. Nothing calls it yet: the bearer handler (pull request 5) is its first user.
 
 ## Next
 
-- Spec 001, plan pull request 4: the token provider (R15 to R18, the token part of R23).
+- Spec 001, plan pull request 5: the bearer handler, the deadline handler on both clients, the failure mapper, header-log redaction, and the redirect setting (R18's shared deadline, R19 to R23).
 
 ## Recent decisions
 
