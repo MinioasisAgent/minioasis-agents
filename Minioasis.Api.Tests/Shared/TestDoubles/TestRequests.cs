@@ -24,6 +24,7 @@ public static class TestRequests
     public const string MissingQueryValue = "a missing required query value";
     public const string NonNumericQueryValue = "a non-numeric value for a numeric query parameter";
     public const string RouteConstraintMismatch = "a value that fails a route constraint";
+    public const string CapabilityNotFound = "a capability's client-visible error";
 
     public const string JsonBody = """{"number":5}""";
 
@@ -44,6 +45,7 @@ public static class TestRequests
         MissingQueryValue => new HttpRequestMessage(HttpMethod.Get, "/test/query"),
         NonNumericQueryValue => new HttpRequestMessage(HttpMethod.Get, "/test/query?page=abc"),
         RouteConstraintMismatch => new HttpRequestMessage(HttpMethod.Get, "/test/items/abc"),
+        CapabilityNotFound => new HttpRequestMessage(HttpMethod.Get, "/test/failures/test.not_found?id=7"),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown test request."),
     };
 

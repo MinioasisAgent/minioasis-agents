@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Minioasis.Api.Tests.Shared.Factories;
 using Minioasis.Api.Tests.Shared.TestDoubles;
 using System.Net;
@@ -60,8 +61,11 @@ public sealed class FrameworkErrorTests
         using var message = new HttpRequestMessage(HttpMethod.Head, "/does-not-exist");
 
         using var response = await client.SendAsync(message, TestContext.Current.CancellationToken);
+        await factory.Logs.WaitForRequestFinishedAsync();
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(ProblemResponseAssert.ProblemJson, response.Content.Headers.ContentType?.MediaType);
+        AssertOneInformationEntry(factory, "not_found");
     }
 
     [Theory]
@@ -93,9 +97,12 @@ public sealed class FrameworkErrorTests
         using var message = new HttpRequestMessage(HttpMethod.Head, path);
 
         using var response = await client.SendAsync(message, TestContext.Current.CancellationToken);
+        await factory.Logs.WaitForRequestFinishedAsync();
 
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
         Assert.Equal(allowed, response.Content.Headers.Allow.Order(StringComparer.Ordinal));
+        Assert.Equal(ProblemResponseAssert.ProblemJson, response.Content.Headers.ContentType?.MediaType);
+        AssertOneInformationEntry(factory, "method_not_allowed");
     }
 
     [Theory]
@@ -175,6 +182,14 @@ public sealed class FrameworkErrorTests
         Assert.Equal(status, (int)response.StatusCode);
         Assert.Null(response.Content.Headers.ContentType);
         Assert.Empty(await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>R5a for a <c>HEAD</c> request, whose body these tests do not read.</summary>
+    private static void AssertOneInformationEntry(ApiTestHostFactory factory, string code)
+    {
+        var entry = Assert.Single(factory.Logs.MinioasisEntries);
+        Assert.Equal(LogLevel.Information, entry.Level);
+        Assert.Contains(code, entry.Message, StringComparison.Ordinal);
     }
 
     private static TheoryData<string, string> InEachEnvironment(params string[] requests)

@@ -42,6 +42,7 @@ public sealed class ErrorLoggingTests
             TestRequests.NonNumericRouteValue,
             TestRequests.MissingQueryValue,
             TestRequests.RouteConstraintMismatch,
+            TestRequests.CapabilityNotFound,
         ],
         ["Development", "Production"]);
 
@@ -127,7 +128,7 @@ public sealed class ErrorLoggingTests
         string request,
         string environment)
     {
-        await using var factory = new ApiTestHostFactory(environment: environment);
+        await using var factory = new ApiTestHostFactory(TestErrorDefinitions.Replace, environment: environment);
         using var client = factory.CreateClient();
         using var message = TestRequests.Create(request);
 
