@@ -50,7 +50,9 @@ public sealed partial class ErrorResponseWriter(ErrorMessageProvider messages, I
 
         // The one place that decides whether an error response has a body. The approved spec (R2, R7) writes it
         // for every method, HEAD included; a change for HEAD is proposed separately and would be made here.
-        return context.Response.WriteAsync(body.ToJsonString(), context.RequestAborted);
+        // Written without the request's abort token: the error is already logged, and a client that has gone must
+        // not turn the write into a second failure with its own Error entries (R5, ER-009).
+        return context.Response.WriteAsync(body.ToJsonString());
     }
 
     [LoggerMessage(
