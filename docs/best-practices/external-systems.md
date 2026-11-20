@@ -274,7 +274,7 @@ var response = await httpClient.SendAsync(request, cancellationToken);
 
 ## EX-013 Report a refused token request as an authentication failure, and an unreachable Koha as unavailable
 
-When Koha refuses or garbles the token request, the outcome is the same and is reported the same way: an error status, a response that cannot be read, or a response that fails validation (`EX-008`). Each becomes an authentication failure, which the API answers with a masked 500 (`ER-004`, `ER-006`). When Koha cannot be reached at all during the token request (a network failure, the deadline, 429, or a 5xx status), the outcome is "unavailable", a masked 503, the same as for any other Koha call (spec 001, D6 and R20), because the cause is Koha's availability, not Minioasis's credentials. The one exception is the caller cancelling, which stays a cancellation (`ER-009`).
+When Koha refuses or garbles the token request, the outcome is the same and is reported the same way: an error status, a response that was received but cannot be parsed, or a response that fails validation (`EX-008`). Each becomes an authentication failure, which the API answers with a masked 500 (`ER-004`, `ER-006`). When Koha cannot be reached at all during the token request (a network failure, the deadline, 429, or a 5xx status), the outcome is "unavailable", a masked 503, the same as for any other Koha call (spec 001, D6 and R20), because the cause is Koha's availability, not Minioasis's credentials. The one exception is the caller cancelling, which stays a cancellation (`ER-009`).
 
 ```csharp
 // BAD: a network error while getting a token escapes as an unhandled exception,
