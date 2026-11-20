@@ -27,8 +27,8 @@ public sealed class KohaUnavailableException : Exception
     }
 
     /// <summary>
-    /// Koha did not reply: <paramref name="networkError"/> is the <see cref="HttpRequestException"/> or the
-    /// <see cref="IOException"/> that ended the exchange.
+    /// Koha did not reply: <paramref name="networkError"/> is the <see cref="HttpRequestException"/> that ended the
+    /// exchange.
     /// </summary>
     public KohaUnavailableException(Exception networkError)
         : base(UnavailableMessage, networkError)

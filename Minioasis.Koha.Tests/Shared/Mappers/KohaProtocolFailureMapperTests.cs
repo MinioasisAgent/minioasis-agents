@@ -52,7 +52,8 @@ public sealed class KohaProtocolFailureMapperTests
 
     // R20: the documented exceptions of a send through the Koha clients (KohaClientNames). The token step's
     // refusal is an authentication failure; Koha being unreachable at either step (a status, a network error, or
-    // the deadline) is "unavailable"; a network error that reaches the adapter directly is "unavailable".
+    // the deadline) is "unavailable"; a network error at the call step, an HttpRequestException (a body that broke
+    // off included, around its IOException), is "unavailable".
     [Theory]
     [MemberData(nameof(DocumentedExceptions))]
     public void Maps_exceptions(Exception exception, DependencyFailureOutcome expected)
@@ -69,11 +70,11 @@ public sealed class KohaProtocolFailureMapperTests
         { new KohaUnavailableException(new HttpRequestException("test")), DependencyFailureOutcome.Unavailable },
         { new HttpRequestException("test"), DependencyFailureOutcome.Unavailable },
         { new HttpRequestException("test", new IOException("test")), DependencyFailureOutcome.Unavailable },
-        { new IOException("test"), DependencyFailureOutcome.Unavailable },
     };
 
     // ER-009, CD-005: a cancellation, or any exception that the Koha clients do not document, is not a Koha
     // failure; the mapper refuses it rather than turn it into an outcome. Its message never repeats the exception's.
+    // A bare IOException is one of them: the clients read the body, so a broken body arrives wrapped (B1).
     [Theory]
     [MemberData(nameof(UndocumentedExceptions))]
     public void Refuses_an_undocumented_exception(Exception exception)
@@ -91,6 +92,7 @@ public sealed class KohaProtocolFailureMapperTests
         new TaskCanceledException("marker"),
         new InvalidOperationException("marker"),
         new KohaConfigurationException("marker"),
+        new IOException("marker"),
     };
 
     [Fact]

@@ -55,8 +55,9 @@ public sealed class KohaAccessTokenProvider
     /// Koha answered with a status other than 200, 429, or 500 to 599, or with a 200 reply that is not a valid token.
     /// </exception>
     /// <exception cref="KohaUnavailableException">
-    /// Koha answered 429 or 500 to 599, could not be reached (<see cref="HttpRequestException"/> or
-    /// <see cref="IOException"/>), or did not answer within the shared request's deadline (R18).
+    /// Koha answered 429 or 500 to 599, could not be reached (an <see cref="HttpRequestException"/>, which is also how
+    /// a body that breaks off arrives through the OAuth client's deadline handler), or did not answer within the shared
+    /// request's deadline (R18).
     /// </exception>
     /// <exception cref="OperationCanceledException">
     /// <paramref name="cancellationToken"/> was cancelled. Only this caller stops waiting. A caller whose token is
@@ -194,7 +195,7 @@ public sealed class KohaAccessTokenProvider
             // status is passed on; the exception itself is neither wrapped nor logged.
             throw RefusedTokenRequest(exception.StatusCode);
         }
-        catch (Exception exception) when (exception is HttpRequestException or IOException)
+        catch (HttpRequestException exception)
         {
             throw new KohaUnavailableException(exception);
         }

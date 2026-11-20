@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Minioasis.Koha.Authentication.Exceptions;
 using Minioasis.Koha.Authentication.Providers;
@@ -138,37 +139,47 @@ public sealed class KohaAccessTokenProviderTests
         }
     }
 
-    // R20, token step: a network error (HttpRequestException, or an IOException while the body is read) is
-    // "unavailable", without a status; the network error is kept as the inner exception.
+    // R20, token step: a network error is "unavailable", without a status, and keeps the network error as the inner
+    // exception. A failed connection arrives as an HttpRequestException. A body that breaks off is sent through the
+    // registered OAuth client, whose deadline handler reads the body, so that it arrives as it does in the
+    // application: an HttpRequestException around the IOException.
     [Theory]
     [InlineData("connect")]
     [InlineData("body")]
     public async Task Network_error_is_unavailable(string failure)
     {
-        Exception? thrown = null;
-        var handler = new StubHttpMessageHandler((_, _) =>
+        var thrown = new HttpRequestException("The test connection failed.");
+        KohaClientsHarness? harness = null;
+        KohaAccessTokenProvider provider;
+        if (failure == "connect")
         {
-            if (failure == "connect")
-            {
-                thrown = new HttpRequestException("The test connection failed.");
-                throw thrown;
-            }
-
-            return Task.FromResult(StubHttpMessageHandler.BrokenBodyReply(HttpStatusCode.OK));
-        });
-        var provider = Provider(handler, new FakeTimeProvider(Start));
-
-        var exception = await Assert.ThrowsAsync<KohaUnavailableException>(
-            () => provider.GetTokenAsync(TestCancellation).WaitAsync(Wait, TestCancellation));
-
-        Assert.Null(exception.KohaStatus);
-        if (thrown is not null)
-        {
-            Assert.Same(thrown, exception.InnerException);
+            provider = Provider(
+                new StubHttpMessageHandler((_, _) => Task.FromException<HttpResponseMessage>(thrown)),
+                new FakeTimeProvider(Start));
         }
         else
         {
-            Assert.IsType<IOException>(exception.InnerException);
+            harness = new KohaClientsHarness(
+                new StubHttpMessageHandler(() => StubHttpMessageHandler.BrokenBodyReply(HttpStatusCode.OK)),
+                new StubHttpMessageHandler(() => new HttpResponseMessage(HttpStatusCode.OK)));
+            provider = harness.Services.GetRequiredService<KohaAccessTokenProvider>();
+        }
+
+        using (harness)
+        {
+            var exception = await Assert.ThrowsAsync<KohaUnavailableException>(
+                () => provider.GetTokenAsync(TestCancellation).WaitAsync(Wait, TestCancellation));
+
+            Assert.Null(exception.KohaStatus);
+            var networkError = Assert.IsType<HttpRequestException>(exception.InnerException);
+            if (failure == "connect")
+            {
+                Assert.Same(thrown, networkError);
+            }
+            else
+            {
+                Assert.IsType<IOException>(networkError.InnerException);
+            }
         }
     }
 

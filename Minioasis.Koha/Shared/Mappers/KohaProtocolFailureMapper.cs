@@ -44,7 +44,7 @@ public static class KohaProtocolFailureMapper
         return exception switch
         {
             KohaAuthenticationException => DependencyFailureOutcome.AuthenticationFailed,
-            KohaUnavailableException or HttpRequestException or IOException => DependencyFailureOutcome.Unavailable,
+            KohaUnavailableException or HttpRequestException => DependencyFailureOutcome.Unavailable,
             _ => throw new ArgumentException(
                 "Not a failure that the Koha clients document; a cancellation propagates instead.",
                 nameof(exception)),

@@ -15,12 +15,14 @@ namespace Minioasis.Koha.Shared.Clients;
 /// <list type="bullet">
 /// <item><see cref="KohaAuthenticationException"/>: the token step failed because Koha refused the token request or
 /// sent no valid token. <c>KohaStatus</c> is Koha's status.</item>
-/// <item><see cref="KohaUnavailableException"/>: Koha could not be reached at the token step (a network error, 429,
-/// or a status from 500 to 599, with <c>KohaStatus</c>), or the deadline expired at any step (no
-/// <c>KohaStatus</c>).</item>
+/// <item><see cref="KohaUnavailableException"/>: Koha could not be reached at the token step, or the deadline
+/// expired at any step. After a 429 or a status from 500 to 599 at the token step, <c>KohaStatus</c> is that status.
+/// After a network error at the token step, <c>KohaStatus</c> is null and the inner exception is the
+/// <see cref="HttpRequestException"/>. After the deadline, <c>KohaStatus</c> is null and there is no inner
+/// exception.</item>
 /// <item><see cref="HttpRequestException"/>: a network error at the call step. A body that broke off while it was
-/// read arrives as one, around the <see cref="IOException"/>, because the deadline handler reads the body. R20
-/// counts a bare <see cref="IOException"/> as a network error too.</item>
+/// read arrives as one too, with the <see cref="IOException"/> inside, because the deadline handler reads the body
+/// on both clients. A bare <see cref="IOException"/> is not part of this contract, and the mapper refuses one.</item>
 /// <item><see cref="OperationCanceledException"/>: the caller cancelled. It is not a failure (<c>ER-009</c>).</item>
 /// </list>
 /// <para>
