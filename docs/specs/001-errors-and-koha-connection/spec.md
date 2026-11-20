@@ -1,9 +1,9 @@
-- **Access:** Level 1
+- **Access:** Level 2
 - **Last Updated:** 2026-11-20
 
 # 001 — API errors and Koha connection
 
-- **Status:** reviewed
+- **Status:** approved
 - **Kind:** internal
 - **Related:** ADR 0003; `ER-001` to `ER-011` in `docs/best-practices/errors.md`; `EX-004` to `EX-013` in `docs/best-practices/external-systems.md`. This spec combines ROADMAP items 001 (API error contract) and 002 (Koha connection) at the maintainer's request.
 
