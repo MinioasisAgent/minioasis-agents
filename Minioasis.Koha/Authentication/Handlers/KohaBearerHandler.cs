@@ -48,7 +48,8 @@ public sealed class KohaBearerHandler : DelegatingHandler
 
         response.Dispose();
         var newToken = await tokens.GetTokenAsync(cancellationToken).ConfigureAwait(false);
-        var retried = await base.SendAsync(CreateRetry(request, newToken), cancellationToken).ConfigureAwait(false);
+        using var retry = CreateRetry(request, newToken);
+        var retried = await base.SendAsync(retry, cancellationToken).ConfigureAwait(false);
         if (retried.StatusCode == HttpStatusCode.Unauthorized)
         {
             // The reply is final (EX-009), but the token that got it is discarded like the first (R19).
