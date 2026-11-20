@@ -171,7 +171,8 @@ public sealed class KohaOptionsFactoryTests
         }
     }
 
-    // R13: whatever fails, no configured value appears anywhere in the exception, inner exceptions included.
+    // R13: whatever fails, no configured value appears in the message, and there is no inner exception that could
+    // carry one. The message, not ToString(), is checked, because the stack trace holds paths and line numbers.
     [Theory]
     [InlineData(BaseUrlVariable, "ftp://marker-host.test/marker-path")]
     [InlineData(BaseUrlVariable, "http://marker-host.test/marker-path")]
@@ -198,10 +199,9 @@ public sealed class KohaOptionsFactoryTests
             () => KohaOptionsFactory.Create(Configuration(configuration), allowInsecureHttp: false));
 
         AssertNames(exception, failing);
-        var text = exception.ToString();
-        Assert.DoesNotContain("marker", text, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("17", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("987", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("marker", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("17", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("987", exception.Message, StringComparison.Ordinal);
         Assert.Null(exception.InnerException);
     }
 

@@ -56,22 +56,24 @@ public sealed class StartupTests
         Assert.Contains(variable, exception.Message, StringComparison.Ordinal);
     }
 
-    // R11, D5: Program.cs passes the Development flag, so plain http stops the host in Production and starts it in
-    // Development.
-    [Fact]
-    public async Task Http_base_url_fails_in_production_and_starts_in_development()
+    // R11, D5: Program.cs passes the Development flag, so plain http stops the host in every other environment
+    // (Production, Staging) and starts it in Development.
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    public async Task Http_base_url_fails_in_production_and_starts_in_development(string nonDevelopment)
     {
         var settings = new Dictionary<string, string?> { ["MINIOASIS_KOHA_BASE_URL"] = "http://koha.test/api/v1" };
-        await using var production = new ApiTestHostFactory(settings: settings, environment: "Production");
+        await using var refused = new ApiTestHostFactory(settings: settings, environment: nonDevelopment);
         await using var development = new ApiTestHostFactory(settings: settings, environment: "Development");
 
-        var exception = Assert.Throws<KohaConfigurationException>(() => production.CreateClient());
+        var exception = Assert.Throws<KohaConfigurationException>(() => refused.CreateClient());
         using var client = development.CreateClient();
         using var response = await client.GetAsync("/does-not-exist", TestContext.Current.CancellationToken);
 
         Assert.Contains("MINIOASIS_KOHA_BASE_URL", exception.Message, StringComparison.Ordinal);
         Assert.Contains("https is required", exception.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("koha.test", exception.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("koha.test", exception.Message, StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 

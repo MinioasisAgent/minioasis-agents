@@ -32,12 +32,37 @@ public sealed class ApiTestHostFactory(
         ["MINIOASIS_KOHA_CLIENT_SECRET"] = "dummy-client-secret",
     };
 
+    private static readonly string[] KohaVariablePrefixes =
+        ["MINIOASIS_KOHA_", "ASPNETCORE_MINIOASIS_KOHA_", "DOTNET_MINIOASIS_KOHA_"];
+
     public RecordingLoggerProvider Logs { get; } = new();
 
     public TestEndpointModule TestEndpoints { get; } = new();
 
+    /// <summary>
+    /// Refuses to build a test host when the process environment sets a Koha variable (TS-008, TS-009): such a value
+    /// could reach the host's configuration, and with it a real Koha URL or secret. Only names are read, never values.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A Koha variable is set; the message names each one.</exception>
+    public static void EnsureNoKohaVariables(IEnumerable<string> variableNames)
+    {
+        var kohaVariables = variableNames.Where(IsKohaVariable).Order(StringComparer.Ordinal).ToList();
+        if (kohaVariables.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"The process environment sets {string.Join(", ", kohaVariables)}. Run the tests in a shell without "
+                + "any MINIOASIS_KOHA_* variable, so that no test host can carry real Koha settings.");
+        }
+    }
+
+    // The configuration reads the variables without regard to case, and also with the ASPNETCORE_ and DOTNET_
+    // prefixes that the host strips.
+    private static bool IsKohaVariable(string name) =>
+        KohaVariablePrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        EnsureNoKohaVariables(Environment.GetEnvironmentVariables().Keys.Cast<string>());
         builder.UseEnvironment(environment);
         foreach (var (key, value) in DummyKohaSettings.Concat(settings ?? new Dictionary<string, string?>()))
         {
