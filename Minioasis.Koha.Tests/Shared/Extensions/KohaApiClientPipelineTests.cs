@@ -111,9 +111,11 @@ public sealed class KohaApiClientPipelineTests
     }
 
     // R21, EX-011: one deadline from the start of the call bounds every step: the token step; the token step and the
-    // call together (the token takes 6 of the 10 seconds, so the call has 4 left); reading the body; the new token
-    // after a 401; and the retry. One tick before the deadline the call is still running; at the deadline it ends in
-    // "unavailable" without a status.
+    // call together; reading the body; the new token after a 401; and the retry. In every row but the first, the step
+    // before the one that stalls takes 6 of the 10 seconds, so a deadline that started again for a later step, or that
+    // only the token request had, would end 6 seconds too late. In the first row the fake Koha ignores the token
+    // request's cancellation, so only the call's own deadline can end the wait. One tick before the deadline the call
+    // is still running; at the deadline it ends in "unavailable" without a status.
     [Theory]
     [InlineData("token")]
     [InlineData("token and call")]
@@ -122,46 +124,49 @@ public sealed class KohaApiClientPipelineTests
     [InlineData("retry")]
     public async Task Deadline_covers_every_step(string step)
     {
-        var slowToken = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstStep = TimeSpan.FromSeconds(6);
+        var unanswered = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstReply = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var tokens = new StubHttpMessageHandler(async (request, cancellationToken) => (step, request.Index) switch
         {
-            ("token", _) => await Stall(cancellationToken),
-            ("token and call", _) => await slowToken.Task,
+            ("token", _) => await unanswered.Task,
+            ("token and call", 0) => await firstReply.Task,
             ("new token", 1) => await Stall(cancellationToken),
             _ => Token($"token-{request.Index + 1}"),
         });
         var api = new StubHttpMessageHandler(async (request, cancellationToken) => (step, request.Index) switch
         {
-            ("body", _) => StubHttpMessageHandler.StallingBodyReply(HttpStatusCode.OK),
-            ("new token" or "retry", 0) => new HttpResponseMessage(HttpStatusCode.Unauthorized),
+            ("body" or "new token" or "retry", 0) => await firstReply.Task,
             _ => await Stall(cancellationToken),
         });
         using var harness = new KohaClientsHarness(tokens, api);
 
         var call = GetAsync(harness.CreateApiClient(), TestCancellation);
-        switch (step)
+        var elapsed = TimeSpan.Zero;
+        if (step == "token")
         {
-            case "token":
-                await tokens.WaitForRequestsAsync(1);
-                break;
-            case "token and call":
-                await tokens.WaitForRequestsAsync(1);
-                harness.Time.Advance(TimeSpan.FromSeconds(6));
-                slowToken.SetResult(Token("token-1"));
-                await api.WaitForRequestsAsync(1);
-                break;
-            case "new token":
-                await tokens.WaitForRequestsAsync(2);
-                break;
-            case "retry":
-                await api.WaitForRequestsAsync(2);
-                break;
-            default:
-                await api.WaitForRequestsAsync(1);
-                break;
+            await tokens.WaitForRequestsAsync(1);
+        }
+        else
+        {
+            await (step == "token and call" ? tokens : api).WaitForRequestsAsync(1);
+            harness.Time.Advance(firstStep);
+            elapsed = firstStep;
+            firstReply.SetResult(step switch
+            {
+                "token and call" => Token("token-1"),
+                "body" => StubHttpMessageHandler.StallingBodyReply(HttpStatusCode.OK),
+                _ => new HttpResponseMessage(HttpStatusCode.Unauthorized),
+            });
+            await (step switch
+            {
+                "token and call" => api.WaitForRequestsAsync(1),
+                "new token" => tokens.WaitForRequestsAsync(2),
+                "retry" => api.WaitForRequestsAsync(2),
+                _ => Task.CompletedTask,
+            });
         }
 
-        var elapsed = step == "token and call" ? TimeSpan.FromSeconds(6) : TimeSpan.Zero;
         harness.Time.Advance(KohaClientsHarness.Deadline - elapsed - TimeSpan.FromTicks(1));
         Assert.False(call.IsCompleted);
         harness.Time.Advance(TimeSpan.FromTicks(1));
