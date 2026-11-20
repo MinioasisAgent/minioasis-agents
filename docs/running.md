@@ -25,6 +25,8 @@ dotnet build minioasis.slnx
 dotnet test minioasis.slnx
 ```
 
+Run the tests in a shell where no `MINIOASIS_KOHA_*` variable is set: the test host refuses to start if one is, so that no test can carry real Koha settings (`TS-008`).
+
 The test projects use xUnit v3 through the VSTest runner, which is what `dotnet test minioasis.slnx` starts. They reference `xunit.v3.mtp-off`, the variant of xUnit v3 without Microsoft.Testing.Platform, because the .NET 10 SDK refuses to run a Microsoft.Testing.Platform project through VSTest. A test file needs `using Xunit;`.
 
 Each test run prints a warning that `VSTEST_ARTIFACTS_DIRECTORY` was not found and that `Microsoft.NET.Test.Sdk` may be outdated. The package is the latest version; the warning comes from the SDK's bundled test platform and is harmless. Do not downgrade to silence it.
