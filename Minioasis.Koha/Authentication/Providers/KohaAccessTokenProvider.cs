@@ -55,14 +55,17 @@ public sealed class KohaAccessTokenProvider
     /// Koha answered with a status other than 200, 429, or 500 to 599, or with a 200 reply that is not a valid token.
     /// </exception>
     /// <exception cref="KohaUnavailableException">
-    /// Koha answered 429 or 500 to 599, or could not be reached (<see cref="HttpRequestException"/> or
-    /// <see cref="IOException"/>).
+    /// Koha answered 429 or 500 to 599, could not be reached (<see cref="HttpRequestException"/> or
+    /// <see cref="IOException"/>), or did not answer within the shared request's deadline (R18).
     /// </exception>
     /// <exception cref="OperationCanceledException">
-    /// <paramref name="cancellationToken"/> was cancelled. Only this caller stops waiting.
+    /// <paramref name="cancellationToken"/> was cancelled. Only this caller stops waiting. A caller whose token is
+    /// already cancelled stops at once and sends no token request.
     /// </exception>
     public async Task<string> GetTokenAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         SharedTokenRequest request;
         bool starts;
         lock (gate)
@@ -88,7 +91,7 @@ public sealed class KohaAccessTokenProvider
         {
             return await request.Token.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // This caller's cancellation, which propagates unchanged (ER-009). The shared request itself never ends
             // in a cancellation while a caller waits for it, and Leave changes nothing for a request that has ended.
@@ -221,12 +224,46 @@ public sealed class KohaAccessTokenProvider
 
     // SentAt is a timestamp of the time provider, which a change of the system clock does not move. The lifetime is
     // counted from the moment the request was sent, which is never later than the moment Koha issued the token.
-    private sealed record IssuedToken(string AccessToken, long SentAt, TimeSpan Lifetime);
+    // A class, not a record, so that no generated ToString can write the token (R23, ER-008).
+    private sealed class IssuedToken(string accessToken, long sentAt, TimeSpan lifetime)
+    {
+        public string AccessToken
+        {
+            get;
+        } = accessToken;
+
+        public long SentAt
+        {
+            get;
+        } = sentAt;
+
+        public TimeSpan Lifetime
+        {
+            get;
+        } = lifetime;
+    }
 
     // Reused while less than UsableFor (the lifetime minus the refresh margin) has passed since SentAt (R17). A token
     // whose lifetime is not longer than the margin has no usable time left: it serves only the callers of the request
     // that obtained it, and the next call requests a new one, as if it had not been cached.
-    private sealed record CachedToken(string AccessToken, long SentAt, TimeSpan UsableFor);
+    // A class, not a record, for the same reason as IssuedToken.
+    private sealed class CachedToken(string accessToken, long sentAt, TimeSpan usableFor)
+    {
+        public string AccessToken
+        {
+            get;
+        } = accessToken;
+
+        public long SentAt
+        {
+            get;
+        } = sentAt;
+
+        public TimeSpan UsableFor
+        {
+            get;
+        } = usableFor;
+    }
 
     private sealed class SharedTokenRequest
     {

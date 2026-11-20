@@ -400,6 +400,63 @@ public sealed class KohaAccessTokenProviderTests
         Assert.Equal(2, handler.Requests.Count);
     }
 
+    // R18, PR 4 review N1: the last waiter's cancellation reaches Leave only after its request R has already failed
+    // and a caller C has started a newer request R2. Leave must leave R2 alone, so that a new caller D joins R2 and
+    // exactly two requests are sent. The order is forced through the token's callbacks, which run in the reverse
+    // order of registration: the test's callback, registered after the call, fails R and starts R2 before the
+    // provider's own callback ends W's wait. W's wait may still end with R's failure first, from the thread pool; such
+    // a run does not reach the race and is skipped. Measured on 4 cores, 5 to 45 % of runs reach it once warm, so the
+    // loop stops after 20 that did, and fails if none of 2000 did.
+    [Fact]
+    public async Task Last_waiter_leaving_after_its_request_ended_leaves_the_newer_request_alone()
+    {
+        const int MaxRuns = 2000;
+        const int Enough = 20;
+        var reached = 0;
+        for (var run = 0; run < MaxRuns && reached < Enough; run++)
+        {
+            if (await LeaveAfterTheRequestEndedAsync())
+            {
+                reached++;
+            }
+        }
+
+        Assert.True(reached > 0, $"None of the {MaxRuns} runs reached the race.");
+    }
+
+    // N3: a caller whose token is already cancelled stops at once and sends no token request, even when none is
+    // cached.
+    [Fact]
+    public async Task Already_cancelled_caller_sends_no_token_request()
+    {
+        var handler = NumberedTokens(3600);
+        var provider = Provider(handler, new FakeTimeProvider(Start));
+        using var caller = new CancellationTokenSource();
+        await caller.CancelAsync();
+
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => provider.GetTokenAsync(caller.Token).WaitAsync(Wait, TestCancellation));
+
+        Assert.Equal(caller.Token, exception.CancellationToken);
+        Assert.Empty(handler.Requests);
+        Assert.Equal("token-1", await GetAsync(provider));
+    }
+
+    // N6, R23, ER-008: the provider's own types that hold the access token cannot write it as text. A record's
+    // generated ToString would.
+    [Fact]
+    public void Nested_types_do_not_write_their_values_as_text()
+    {
+        var nested = typeof(KohaAccessTokenProvider).GetNestedTypes(System.Reflection.BindingFlags.NonPublic);
+
+        Assert.NotEmpty(nested);
+        Assert.All(nested, type => Assert.Null(type.GetMethod(
+            nameof(ToString),
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+                | System.Reflection.BindingFlags.DeclaredOnly,
+            Type.EmptyTypes)));
+    }
+
     // R19 (provider part), EX-009: Invalidate discards the cached token it names, so the next call requests a new one.
     [Fact]
     public async Task Invalidate_discards_the_token_it_names()
@@ -449,6 +506,54 @@ public sealed class KohaAccessTokenProviderTests
         Assert.Equal(
             "timeProvider",
             Assert.Throws<ArgumentNullException>(() => new KohaAccessTokenProvider(factory, options, null!)).ParamName);
+    }
+
+    // One run of the N1 race. Returns false when W's wait ended with R's failure instead of its cancellation, so the
+    // run did not reach the race; otherwise asserts that the newer request R2 was kept.
+    private static async Task<bool> LeaveAfterTheRequestEndedAsync()
+    {
+        // No RunContinuationsAsynchronously on R's reply: its failure is processed inside the test's callback.
+        var first = new TaskCompletionSource<HttpResponseMessage>();
+        var second = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new StubHttpMessageHandler((request, _) => request.Index switch
+        {
+            0 => first.Task,
+            1 => second.Task,
+            _ => Task.FromResult(Token($"token-{request.Index + 1}", 3600)),
+        });
+        var provider = Provider(handler, new FakeTimeProvider(Start));
+        using var waiter = new CancellationTokenSource();
+
+        var w = provider.GetTokenAsync(waiter.Token);
+        await handler.WaitForRequestsAsync(1);
+        Task<string>? c = null;
+        var requestsAfterC = 0;
+        using (waiter.Token.Register(() =>
+        {
+            first.SetException(new HttpRequestException("The test request R failed."));
+            c = provider.GetTokenAsync(TestCancellation);
+            requestsAfterC = handler.Requests.Count;
+        }))
+        {
+            await waiter.CancelAsync();
+        }
+
+        var wOutcome = await Record.ExceptionAsync(() => w.WaitAsync(Wait, TestCancellation));
+        if (wOutcome is not OperationCanceledException || requestsAfterC != 2)
+        {
+            // W received R's failure first, or R did not fail inside the callback: the race was not reached.
+            second.TrySetResult(Token("token-2", 3600));
+            await Record.ExceptionAsync(() => c!.WaitAsync(Wait, TestCancellation));
+            return false;
+        }
+
+        var d = provider.GetTokenAsync(TestCancellation);
+        second.SetResult(Token("token-2", 3600));
+
+        Assert.Equal("token-2", await c!.WaitAsync(Wait, TestCancellation));
+        Assert.Equal("token-2", await d.WaitAsync(Wait, TestCancellation));
+        Assert.Equal(2, handler.Requests.Count);
+        return true;
     }
 
     private static KohaAccessTokenProvider Provider(HttpMessageHandler handler, TimeProvider time) =>
