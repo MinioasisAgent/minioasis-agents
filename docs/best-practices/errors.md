@@ -89,6 +89,7 @@ The category decides the status, in one place in Api. A feature never chooses a 
 | --- | --- |
 | Validation: the request is invalid | 400 |
 | Not found | 404 |
+| Method not allowed: the address exists but does not accept the request method | 405 |
 | A dependency returned a response that cannot be used | 502 |
 | A dependency is unavailable | 503 |
 | Authentication to a dependency failed | 500 |

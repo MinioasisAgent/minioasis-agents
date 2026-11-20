@@ -22,7 +22,7 @@ Some choices have to be fixed before the first line is written. The rules in `do
 | 3 | Koha is the only external system and the authority for library records. Minioasis has no storage of its own. | `CLAUDE.md`, section 3 |
 | 4 | Koha is called through clients that NSwag generates from focused contracts. Each focused contract is derived from `contracts/official_koha_openapi.json`, which the maintainer supplies for the Koha version in use. Generated code lives in `Minioasis.Koha/Generated`. | `EX-001` to `EX-003` |
 | 5 | Minioasis authenticates to Koha as a least-privilege service account, with OAuth 2 client credentials. | `EX-004` to `EX-009`, `EX-013` |
-| 6 | Configuration is read from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`. | `EX-005` |
+| 6 | Configuration is read from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`, and the optional `MINIOASIS_KOHA_TIMEOUT_SECONDS` (added by spec 001 on 2026-11-20). | `EX-005` |
 | 7 | The API has one error contract: Problem Details with `code` and `traceId`, a fixed status for each error category, and masked server failures. Client-visible messages are English and live in `Minioasis.Api/Resources/errors.en.json`. | `ER-003` to `ER-006`, `ER-011` |
 | 8 | Formatting is defined in `.editorconfig` and checked with `dotnet format`. One script, `scripts/preflight.sh`, runs every check, and CI runs that script. | `CD-009`; `CLAUDE.md`, section 8 |
 

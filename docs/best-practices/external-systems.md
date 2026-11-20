@@ -92,7 +92,7 @@ var httpClient = httpClientFactory.CreateClient(KohaClientNames.Api);
 
 Minioasis signs in to Koha as a service account. Give that account only the Koha permissions that approved specs list. A wider permission is a larger loss if the credentials leak.
 
-Credentials are read at run time through ASP.NET configuration, from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`. Real values never enter source control or diagnostic output (`ER-008`).
+Credentials are read at run time through ASP.NET configuration, from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`. The optional `MINIOASIS_KOHA_TIMEOUT_SECONDS` sets the deadline of `EX-011` (spec 001). Real values never enter source control or diagnostic output (`ER-008`).
 
 ```jsonc
 // BAD: appsettings.json, committed
