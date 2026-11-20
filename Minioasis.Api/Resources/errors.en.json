@@ -1,0 +1,14 @@
+{
+  "not_found": {
+    "title": "Not found",
+    "detail": "No resource exists at this address."
+  },
+  "method_not_allowed": {
+    "title": "Method not allowed",
+    "detail": "This address does not support this request method."
+  },
+  "request.invalid": {
+    "title": "Invalid request",
+    "detail": "The request could not be read."
+  }
+}
