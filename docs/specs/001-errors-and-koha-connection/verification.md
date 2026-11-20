@@ -4,10 +4,10 @@
 # 001 — API errors and Koha connection: verification
 
 - **Spec:** [spec.md](spec.md)
-- **Verified at commit:** not yet
-- **Transfer branch:** not yet
+- **Verified at commit:** `fc6e4d9` (the code and tests; this record and the status change follow in the next commit)
+- **Transfer branch:** `ready/001-errors-and-koha-connection`, created at the `master` commit that merges this record
 
-The spec is built in the five pull requests of `plan.md`, "Pull request breakdown". This record covers all five: pull request 1, "Application error model", pull request 2, "Api error contract", pull request 3, "Koha configuration and generated client", pull request 4, "Token provider", and pull request 5, "Handlers and failure mapping". Every clause of R1 to R23 is built, and the record is ready for independent verification.
+The spec is built in the five pull requests of `plan.md`, "Pull request breakdown". This record covers all five: pull request 1, "Application error model", pull request 2, "Api error contract", pull request 3, "Koha configuration and generated client", pull request 4, "Token provider", and pull request 5, "Handlers and failure mapping". Every clause of R1 to R23 is built, and it was verified on 2026-11-20 (see "Independent verification").
 
 Test names are written `Project::Class::Method`, with `App` for `Minioasis.Application.Tests`, `Api` for `Minioasis.Api.Tests`, `Koha` for `Minioasis.Koha.Tests`, and the class's folder under `Shared/` or `Authentication/` (`Api::StartupTests` is at the project root). A number in brackets is the number of theory cases.
 
@@ -389,13 +389,21 @@ Supporting tests of pull request 1, not tied to one clause: `App::Errors.Applica
 | `a73af0b` (pull request 4) | 2026-11-20 | passed | 396 / 396 (52 `Minioasis.Application.Tests`, 154 `Minioasis.Koha.Tests`, 190 `Minioasis.Api.Tests`) |
 | `b6aa5b8` (pull request 5) | 2026-11-20 | passed | 506 / 506 (52 `Minioasis.Application.Tests`, 264 `Minioasis.Koha.Tests`, 190 `Minioasis.Api.Tests`) |
 | `b9e33d7` (pull request 5, review fixes) | 2026-11-20 | passed | 507 / 507 (52 `Minioasis.Application.Tests`, 265 `Minioasis.Koha.Tests`, 190 `Minioasis.Api.Tests`) |
-| `14876dd` (verification fixes) | 2026-11-20 | passed | 508 / 508 (52 `Minioasis.Application.Tests`, 266 `Minioasis.Koha.Tests`, 190 `Minioasis.Api.Tests`) |
+| `14876dd` (verification fixes; merged to `master` as `fc6e4d9`) | 2026-11-20 | passed | 508 / 508 (52 `Minioasis.Application.Tests`, 266 `Minioasis.Koha.Tests`, 190 `Minioasis.Api.Tests`) |
 
 ## Independent verification
 
-- **Verdict:** not yet. All five pull requests are built; the record is ready for the `verifier`.
-- **Blocking findings:** none yet
-- **Non-blocking findings:** none yet
+- **Verdict:** verified, on 2026-11-20, at `fc6e4d9`, by a fresh `verifier` (Opus 5.5, effort high per its role file) that wrote none of the work.
+- **Round 1** (at `cc0b6b5`): 189 single changes to production code, each rebuilt and run against the full suite; 187 caught. One blocking finding: nothing failed when the registered `OAuth` client sent an `Authorization` header on the token request (R15, `EX-007`). One gap that left behavior intact: a cancellation during the bearer handler's retry turned into the 401 was not caught by the handler's own tests (R22).
+- **Fix:** pull request #10 added both tests and corrected test counts in this record (see "Fixes after the independent verification"). Reviewed by `reviewer`, no findings.
+- **Round 2** (at `fc6e4d9`): both changes re-applied; each now fails exactly one test. `scripts/preflight.sh` passed, 508 / 508; the Koha tests passed 5 runs of 5.
+- **Blocking findings:** none.
+- **Non-blocking findings:**
+  - The error body for `HEAD` is not asserted; the wording waits on the maintainer's decision in pull request #4.
+  - `spec.md` R20 and `plan.md` (Approach, the R20 Tests row, a pull request 4 deviation) still name a bare `IOException`, which the code no longer receives; the wording change is pull request #11, Level 2, awaiting the maintainer. Behavior is unchanged.
+  - The `Api` client, `KohaProtocolFailureMapper`, and `DependencyErrorDefinitions.ForKohaOutcome` have no production caller until spec 003 (`plan.md`, "Risks"); tests reach every branch.
+  - R8's over-size case is simulated (`OversizedBodyStartupFilter`), because TestServer enforces no limit; a real-Kestrel check fits the first capability that reads a body.
+- **Needs maintainer:** manual acceptance M1 to M3 below; per D10, the first Koha capability's manual acceptance covers the real token reply and the `RESTOAuth2ClientCredentials` setting.
 
 ## Manual acceptance (maintainer)
 
