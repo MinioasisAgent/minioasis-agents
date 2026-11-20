@@ -30,7 +30,7 @@ public sealed class KohaDeadlineHandlerTests
         using var invoker = Invoker(new StubHttpMessageHandler(
             () => StubHttpMessageHandler.Reply(HttpStatusCode.OK, """{"ok":true}""")), time);
 
-        using var response = await SendAsync(invoker, TestCancellation);
+        using var response = await SendAsync(invoker, TestCancellation).WaitAsync(Wait, TestCancellation);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("""{"ok":true}""", await response.Content.ReadAsStringAsync(TestCancellation));
@@ -97,7 +97,7 @@ public sealed class KohaDeadlineHandlerTests
         }), time);
         time.Advance(Deadline * 2);
 
-        using var response = await SendAsync(invoker, TestCancellation);
+        using var response = await SendAsync(invoker, TestCancellation).WaitAsync(Wait, TestCancellation);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

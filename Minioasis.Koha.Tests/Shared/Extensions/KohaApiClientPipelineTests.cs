@@ -29,7 +29,8 @@ public sealed class KohaApiClientPipelineTests
         var api = new StubHttpMessageHandler(() => StubHttpMessageHandler.Reply(HttpStatusCode.OK, """{"id":7}"""));
         using var harness = new KohaClientsHarness(tokens, api);
 
-        using var response = await GetAsync(harness.CreateApiClient(), TestCancellation);
+        using var response = await GetAsync(harness.CreateApiClient(), TestCancellation)
+            .WaitAsync(Wait, TestCancellation);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("""{"id":7}""", await response.Content.ReadAsStringAsync(TestCancellation));
