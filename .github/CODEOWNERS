@@ -1,0 +1,18 @@
+# Access: Level 2
+# Last Updated: 2026-11-20
+
+# The safeguard paths (CLAUDE.md, section 5, Level 2 item 5; editing the official contract is Level 3).
+# With "Require review from Code Owners" on master, GitHub will not merge a change to any of them without
+# the maintainer's approving review. The owner needs write access (docs/workflow/production-transfer.md).
+
+/CLAUDE.md                 @GoldBeluga
+/docs/best-practices/      @GoldBeluga
+/docs/specs/README.md      @GoldBeluga
+/docs/specs/_template/     @GoldBeluga
+/docs/workflow/            @GoldBeluga
+/.claude/                  @GoldBeluga
+/.github/                  @GoldBeluga
+/scripts/                  @GoldBeluga
+/.editorconfig             @GoldBeluga
+/LICENSE.txt               @GoldBeluga
+/contracts/official_koha_openapi.json @GoldBeluga

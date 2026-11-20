@@ -1,0 +1,10 @@
+# Access: Level 1
+# Last Updated: 2026-11-20
+
+**/bin/
+**/obj/
+**/TestResults/
+.vs/
+.env
+.env.*
+!.env.example
