@@ -14,13 +14,12 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 ## What exists
 
 - **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), and the pinned NSwag client generator (`dotnet-tools.json`, `nswag.json`).
-- **No application code, no test, and no spec.** Everything is written from the start, under these rules.
-- The technical baseline is decided in ADR 0003. The solution and the projects are not built yet.
+- **The foundation:** `minioasis.slnx` and the six projects that ADR 0003 decides (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`, and a `.Tests` project for each), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
+- **No behavior, no test, and no spec.** `Minioasis.Api` starts an empty host with no endpoints. Everything else is written from the start, under these rules.
 
 ## Next
 
-- The foundation, which is the first row of `docs/ROADMAP.md`. No C# check can run before it exists.
-- Then the first spec. The maintainer chooses it; the roadmap proposes an order.
+- The first spec. The maintainer chooses it; the roadmap proposes an order.
 
 ## Recent decisions
 
@@ -28,6 +27,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 - ADR 0002: development process adapted from GSD Core and brave-core.
 - ADR 0003: technical baseline.
 - ADR 0004: models per role.
+- The test framework, xUnit v3 (`xunit.v3.mtp-off`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`), accepted by merging the foundation pull request.
 
 ## Open questions for the maintainer
 
