@@ -9,17 +9,18 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Being built in the five pull requests the plan lists; pull request 1 (the Application error model) is #5.
+- Spec 001, API errors and Koha connection: `approved` on 2026-11-20 (approving review by the maintainer on pull request #2). Its plan is `approved` (2026-11-20, under the maintainer's exception for spec 001 recorded in `plan.md`). Being built in the five pull requests the plan lists: pull request 1 (the Application error model) merged as #5; pull request 2 (the Api error contract) is on the branch `ai/sprint/001-api-errors`.
 
 ## What exists
 
 - **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), and the pinned NSwag client generator (`dotnet-tools.json`, `nswag.json`).
 - **The foundation:** `minioasis.slnx` and the six projects that ADR 0003 decides (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`, and a `.Tests` project for each), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
-- **The Application error model** of spec 001: error categories, definitions, the registry and its checks, results, `DependencyFailureOutcome`, `AddApplication()`, and their tests. No endpoint and no Koha code yet; `Minioasis.Api` starts an empty host. Everything else is written from the start, under these rules.
+- **The Application error model** of spec 001: error categories, definitions, the registry and its checks, results, `DependencyFailureOutcome`, `AddApplication()`, and their tests.
+- **The Api error contract** of spec 001: every error response has the Problem Details shape with `code` and `traceId`; server failures are masked and logged once with the trace identifier; ASP.NET's own 404, 405, 400, 413, and 415 are shaped; `errors.en.json` is embedded and checked against the definitions at startup; endpoints come from `IEndpointModule` registrations. The shared Api test host (`ApiTestHostFactory`) exists. No production endpoint and no Koha code yet: every request to the running API is a 404 `not_found`. Everything else is written from the start, under these rules.
 
 ## Next
 
-- Spec 001, plan pull request 2: the API error contract.
+- Spec 001, plan pull request 3: Koha configuration and the generated OAuth client.
 
 ## Recent decisions
 
