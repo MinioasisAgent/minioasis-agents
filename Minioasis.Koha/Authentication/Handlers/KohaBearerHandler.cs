@@ -6,8 +6,8 @@ namespace Minioasis.Koha.Authentication.Handlers;
 
 /// <summary>
 /// Attaches <c>Authorization: Bearer &lt;token&gt;</c> to every protected Koha call (spec 001, R19; <c>EX-004</c>).
-/// After a 401, it discards the token that got it, unless another call has already replaced it. A <c>GET</c> is then
-/// sent once more, as a new request with a new token, and the reply to that second attempt is final
+/// After any 401, it discards the token that got it, unless another call has already replaced it. A <c>GET</c> is
+/// then sent once more, as a new request with a new token, and the reply to that second attempt is final
 /// (<c>EX-009</c>). A request with any other method is never sent again (<c>EX-010</c>).
 /// </summary>
 /// <remarks>
@@ -48,7 +48,14 @@ public sealed class KohaBearerHandler : DelegatingHandler
 
         response.Dispose();
         var newToken = await tokens.GetTokenAsync(cancellationToken).ConfigureAwait(false);
-        return await base.SendAsync(CreateRetry(request, newToken), cancellationToken).ConfigureAwait(false);
+        var retried = await base.SendAsync(CreateRetry(request, newToken), cancellationToken).ConfigureAwait(false);
+        if (retried.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            // The reply is final (EX-009), but the token that got it is discarded like the first (R19).
+            tokens.Invalidate(newToken);
+        }
+
+        return retried;
     }
 
     // EX-009: the request is built again, with the same method, address, and headers, and the new token. That is

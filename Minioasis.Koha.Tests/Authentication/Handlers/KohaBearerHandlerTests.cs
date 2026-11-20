@@ -59,14 +59,21 @@ public sealed class KohaBearerHandlerTests
             Assert.Equal("kept", Header(request, "X-Test"));
         });
         Assert.Equal(2, tokens.Requests.Count);
+
+        // The new token that succeeded is kept for the next call.
+        using var next = await SendAsync(invoker, HttpMethod.Get);
+        Assert.Equal("Bearer token-2", Authorization(api.Requests[2]));
+        Assert.Equal(2, tokens.Requests.Count);
     }
 
-    // R19, EX-009: a GET answered 401 twice is sent exactly twice; the second 401 is final.
+    // R19, EX-009: a GET answered 401 twice is sent exactly twice; the second 401 is final. The token that got the
+    // second 401 is discarded like the first, so the next call uses a new token.
     [Fact]
     public async Task Get_with_401_then_401_is_final()
     {
         var tokens = NumberedTokens();
-        var api = new StubHttpMessageHandler(() => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        var api = new StubHttpMessageHandler((request, _) => Task.FromResult(new HttpResponseMessage(
+            request.Index < 2 ? HttpStatusCode.Unauthorized : HttpStatusCode.OK)));
         using var invoker = Invoker(tokens, api);
 
         using var response = await SendAsync(invoker, HttpMethod.Get);
@@ -74,6 +81,12 @@ public sealed class KohaBearerHandlerTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal(["Bearer token-1", "Bearer token-2"], api.Requests.Select(Authorization));
         Assert.Equal(2, tokens.Requests.Count);
+
+        using var next = await SendAsync(invoker, HttpMethod.Get);
+
+        Assert.Equal(HttpStatusCode.OK, next.StatusCode);
+        Assert.Equal("Bearer token-3", Authorization(api.Requests[2]));
+        Assert.Equal(3, tokens.Requests.Count);
     }
 
     // R19: when another call has already replaced the token that got the 401, that newer token is kept and used for
