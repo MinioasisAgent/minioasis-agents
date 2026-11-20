@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Minioasis.Koha.Authentication.Providers;
 using Minioasis.Koha.Shared.Clients;
 using Minioasis.Koha.Shared.Exceptions;
 using Minioasis.Koha.Shared.Factories;
@@ -9,7 +11,8 @@ namespace Minioasis.Koha.Shared.Extensions;
 public static class KohaServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the Koha connection: the checked options and the two named clients (<c>EX-007</c>). The options are
+    /// Registers the Koha connection: the checked options, the two named clients (<c>EX-007</c>), and the token
+    /// provider, with <see cref="TimeProvider.System"/> unless a time provider is already registered. The options are
     /// read and checked now, while registering, so that an invalid variable stops the application before it starts
     /// (spec 001, R10 to R13). Nothing here contacts Koha (D6, R14).
     /// </summary>
@@ -31,6 +34,10 @@ public static class KohaServiceCollectionExtensions
         // (CD-006, EX-011), not by HttpClient.
         services.AddHttpClient(KohaClientNames.OAuth, client => client.Timeout = Timeout.InfiniteTimeSpan);
         services.AddHttpClient(KohaClientNames.Api, client => client.Timeout = Timeout.InfiniteTimeSpan);
+
+        // One instance: one token cache and one shared token request for the whole application (R17, R18).
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<KohaAccessTokenProvider>();
 
         return services;
     }
