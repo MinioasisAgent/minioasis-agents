@@ -63,6 +63,8 @@ Rules referred to are in `docs/best-practices/errors.md` (`ER-`) and `docs/best-
 
 ### Error responses
 
+For a `HEAD` request, every error response in R2, R3, and R6 to R8a has its status, content type, and headers (such as `Allow`), and no body, as HTTP requires.
+
 In R5 and R5a, "log entry" counts only entries written by Minioasis code (categories starting with `Minioasis`), except as R5 and R5a state for all categories.
 
 - **R1.** Given an Application failure of each category, when Api turns it into a response, then the status is: validation 400, not found 404, method not allowed 405, dependency returned an unusable response 502, dependency unavailable 503, authentication to a dependency failed 500, unexpected failure 500. The mapping is applied in one place (`ER-004`). Covers each of the seven categories.
