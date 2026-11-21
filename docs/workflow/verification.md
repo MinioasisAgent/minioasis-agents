@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-20
+- **Last Updated:** 2026-11-21
 
 # Review and verification
 
@@ -66,6 +66,10 @@ For each blocking finding, the checker names the stage where it started: the spe
 For example, the verifier finds a requirement whose planned test cannot fail where the plan puts it. The coordinator revises `plan.md`, the `reviewer` runs the plan check on the revised plan, the maintainer accepts it, and the coders build from it before verification starts again.
 
 A change to the spec always needs a new round of B, because the plan must follow the spec. A change to an approved spec's requirements also needs the maintainer's acceptance (Level 2).
+
+### Before the next spec or plan round
+
+A fix can break what it does not touch. Before asking for the next round of stage A or B, the coordinator re-reads each changed requirement, decision, or plan entry in full, together with everything that refers to it. For a spec, it also repeats the re-read in "Spec check" (`docs/specs/README.md`). The next round runs the full check. The coordinator lists the changed sections by name only, without its reasoning.
 
 ### When a limit is reached
 

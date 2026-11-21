@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-20
+- **Last Updated:** 2026-11-21
 
 # Specs
 
@@ -88,11 +88,17 @@ For each requirement, ask what could go wrong at its edges (empty, zero, very la
 
 ## Spec check (step 2)
 
+Before asking for the spec check, the coordinator re-reads its own draft. This does not replace the spec check.
+
+- Each locked decision is carried by the requirements, edge cases, and prohibitions that depend on it, and none of them narrows or contradicts it.
+- Every answer the maintainer gave and every commitment the coordinator made during the discussion agrees with "Decisions". Where two of them conflict, the maintainer settles it before the check.
+
 The `reviewer` reads `spec.md` alone and answers:
 
 1. Does the spec meet every rule above?
 2. Is every box under "Ready for approval" true?
 3. Could two readers build different behavior from any requirement?
+4. Does any requirement, edge case, or prohibition narrow or contradict a locked decision, or contradict another requirement, edge case, or prohibition? Name both clauses.
 
 ## Plan check (step 5)
 
