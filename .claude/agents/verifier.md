@@ -1,6 +1,6 @@
 ---
 name: verifier
-description: Independently verifies every fully built capability, after its review, against the fixed bar in docs/process.md, section 8. Use once a capability is completely implemented and reviewed, never for one it helped build.
+description: Independently verifies every capability, after its code is written and reviewed, against the fixed bar in docs/process.md, section 8. Use when a capability is completely implemented and reviewed, never for one it helped build.
 model: opus
 effort: high
 ---

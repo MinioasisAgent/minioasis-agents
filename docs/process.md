@@ -171,7 +171,7 @@ Every pull request is checked by a new session before it merges.
 | --- | --- | --- |
 | Brief check | A pull request that writes or revises a brief (section 4) | `reviewer` |
 | Review | Every other pull request, including a wording correction to a brief | `reviewer` |
-| Verification | Every capability, once, after its review and before its last pull request merges (section 8) | `verifier` |
+| Verification | Every capability, one time, after the review of its last pull request and before that pull request merges (section 8) | `verifier` |
 
 1. **Each check is independent.** The coordinator starts each check as a new session that did not write the work (`CLAUDE.md`, section 4, rule 2). It gives that session the brief and the code, not the author's explanation. A session that has already checked the work is not new: each round starts another.
 2. **The reviewer runs on a different model family from the coders.** If the session that wrote the work ran on the reviewer's family, the pull request says so.
@@ -183,7 +183,7 @@ Every pull request is checked by a new session before it merges.
 
 ## 8. Verify
 
-Every capability is verified: once, after its code is written and its review found no blocking issue, and before its last pull request merges. A brief is never verified. A brief is checked (section 4).
+Every capability is verified one time: after its code is written and the review of its last pull request found no blocking issue, and before that pull request merges. A brief is never verified. A brief is checked (section 4).
 
 Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The review only does this for the behaviors that the reviewer doubts most.
 
@@ -314,7 +314,7 @@ An agent may merge its own Level 1 pull request only when all of these hold:
 4. Every test Koha check that applies ran and passed (section 13). If one could not run, the pull request is Level 2, because it would merge with a check left out (`CLAUDE.md`, section 3, item 5). Label it `needs-human`, and say which check and why.
 
    Why: without this, a capability could again be built on a belief about Koha that nothing has tested.
-5. The verification passed before the capability's last pull request merges (section 8).
+5. For a capability's last pull request: the verification passed (section 8).
 6. `docs/STATE.md` and `docs/ROADMAP.md` are updated where their content changed.
 
 Merge with **squash**, then delete the task branch. The one exception is a production sync, which merges with a merge commit (`docs/transfer.md`, section 4).
