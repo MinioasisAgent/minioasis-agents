@@ -1,5 +1,5 @@
 - **Access:** Level 1
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-23
 
 # Running Minioasis
 
@@ -9,7 +9,7 @@ How to build, test, and run the application on a development machine. Keep this 
 
 - The .NET 10 SDK.
 - No Koha server and no credentials. The ordinary tests never need either (`TS-008`).
-- For the test Koha checks only (`TS-013`): the three `MINIOASIS_TEST_KOHA_*` variables, which the maintainer sets in the environment's settings. No such check exists yet; the build of the first capability that has one writes here how they are marked and run.
+- For the test Koha checks only (`TS-013`): the five `MINIOASIS_TEST_KOHA_*` variables, which the maintainer sets in the environment's settings. No such check exists yet; the build of the first capability that has one writes here how they are marked and run.
 
 ## Run every check
 

@@ -28,7 +28,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 ## Open questions for the maintainer
 
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
-- **The test Koha.** Its address and credentials, entered in the environment's settings as the three variables that `TS-013` names; its Koha version; and confirmation that it holds no real patron data. Until it exists, a pull request with a test Koha check waits for the maintainer (`docs/process.md`, section 12).
+- **The test Koha's address.** `MINIOASIS_TEST_KOHA_BASE_URL` is not set yet. The other four variables that `TS-013` names are set.
 - **Which capability comes first,** and whether staff authentication must exist before the first capability is exposed.
 
 ## Production transfers
@@ -41,4 +41,4 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 - Agents need the .NET 10 SDK to run the checks.
 - The project uses Koha 26.05 (`CLAUDE.md`, section 1). Manual acceptance runs against that version. The contract file does not state its Koha version: its `info.version` is the REST API version, `1`.
-- Agents may call only the test Koha that the maintainer provides (`TS-013`). It is not set up yet, so its checks report "not run".
+- Agents may call only the test Koha that the maintainer provides (`TS-013`). It runs Koha 26.05, as the maintainer states; no response shows the version. It sits behind Cloudflare Access, so every request sends the two Cloudflare Access headers (`TS-013`). A session reached it on 2026-11-23: a client-credentials token request with HTTP Basic, and one with the credentials in the body, returned 200; an API call with the token returned 200.
