@@ -11,4 +11,12 @@
     <ProjectReference Include="../Minioasis.Koha/Minioasis.Koha.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/errors.en.json" LogicalName="Minioasis.Api.Resources.errors.en.json" WithCulture="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Minioasis.Api.Tests" />
+  </ItemGroup>
+
 </Project>

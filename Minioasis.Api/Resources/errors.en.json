@@ -1,0 +1,18 @@
+{
+  "items.invalid_identifier": {
+    "title": "Invalid item identifier",
+    "detail": "The item identifier must be a valid positive identifier."
+  },
+  "items.not_found": {
+    "title": "Item not found",
+    "detail": "No item was found with identifier {id}."
+  },
+  "not_found": {
+    "title": "Not found",
+    "detail": "The requested resource does not exist."
+  },
+  "method_not_allowed": {
+    "title": "Method not allowed",
+    "detail": "This resource does not support the request method."
+  }
+}
