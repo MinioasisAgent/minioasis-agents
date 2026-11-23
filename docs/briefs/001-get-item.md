@@ -78,7 +78,7 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 **Security**
 
 - **Who may call it: anyone who can reach the API.** Staff sign-in does not exist yet, and this brief sets no listening address. The maintainer's design is that the API listens on localhost only and validates the Cloudflare Access token that the user interface forwards; that is the next brief (part 5).
-- Get item works only if the Koha service account has the `catalogue` permission. Without it, Koha answers 403.
+- Get item works only if the Koha service account has the `catalogue` permission, as the contract states for `getItem`.
 - No patron data is read, returned, or logged.
 - The log may hold the trace identifier, internal error codes, HTTP status codes, the `error` word of a Koha token response (`access_denied` for a wrong secret and `unauthorized_client` for an unknown client identifier, on the test Koha, 26.05), logged only when it is at most 64 characters, and the Koha client identifier. It never holds the client secret, an access token, or an `Authorization` header (`ER-008`).
 
