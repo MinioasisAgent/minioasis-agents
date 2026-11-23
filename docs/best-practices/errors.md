@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-23
 
 # Errors
 
@@ -79,6 +79,7 @@ The category decides the status, in one place in Api. A feature never chooses a 
 | --- | --- |
 | Validation: the request is invalid | 400 |
 | Not found | 404 |
+| Method not allowed: the route does not support the request method | 405 |
 | A dependency returned a response that cannot be used | 502 |
 | A dependency is unavailable | 503 |
 | Authentication to a dependency failed | 500 |
