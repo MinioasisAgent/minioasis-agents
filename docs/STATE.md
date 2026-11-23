@@ -28,7 +28,6 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 ## Open questions for the maintainer
 
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
-- **The test Koha's address.** `MINIOASIS_TEST_KOHA_BASE_URL` is not set yet. The other four variables that `TS-013` names are set.
 - **Which capability comes first,** and whether staff authentication must exist before the first capability is exposed.
 
 ## Production transfers
