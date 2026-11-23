@@ -114,7 +114,8 @@ public sealed class KohaDeadlineHandlerTests
     {
         using var invoker = Invoker((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
 
-        using var response = await SendAsync(invoker, CancellationToken.None);
+        using var response = await SendAsync(invoker, CancellationToken.None)
+            .WaitAsync(Wait.Limit, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, time.PendingTimers);
     }

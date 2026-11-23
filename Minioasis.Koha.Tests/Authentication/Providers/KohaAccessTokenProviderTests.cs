@@ -14,7 +14,7 @@ public sealed class KohaAccessTokenProviderTests
     {
         using var host = new KohaTestHost();
 
-        var token = await host.Tokens.GetAsync(TestContext.Current.CancellationToken);
+        var token = await GetTokenAsync(host);
 
         Assert.Equal("token-1", token);
         var request = Assert.Single(host.OAuth.Requests);
@@ -35,7 +35,7 @@ public sealed class KohaAccessTokenProviderTests
     {
         using var host = new KohaTestHost(clientId: "clïent", clientSecret: "sécret");
 
-        await host.Tokens.GetAsync(TestContext.Current.CancellationToken);
+        await GetTokenAsync(host);
 
         var request = Assert.Single(host.OAuth.Requests);
         Assert.Equal(Convert.ToBase64String(Encoding.UTF8.GetBytes("clïent:sécret")), request.Authorization!.Parameter);
@@ -52,7 +52,7 @@ public sealed class KohaAccessTokenProviderTests
     {
         using var host = new KohaTestHost(oauth: (_, _) => Task.FromResult(KohaResponses.Token(tokenType: tokenType)));
 
-        Assert.Equal("token-1", await host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("token-1", await GetTokenAsync(host));
     }
 
     public static TheoryData<string> RejectedTokenResponses => new()
@@ -77,7 +77,7 @@ public sealed class KohaAccessTokenProviderTests
         using var host = new KohaTestHost(oauth: (_, _) => Task.FromResult(KohaResponses.Json(HttpStatusCode.OK, json)));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
     }
 
     [Fact]
@@ -88,16 +88,16 @@ public sealed class KohaAccessTokenProviderTests
             Task.FromResult(KohaResponses.Token(token: $"token-{++issued}", expiresIn: 3600)));
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        Assert.Equal("token-1", await host.Tokens.GetAsync(cancellationToken));
-        Assert.Equal("token-1", await host.Tokens.GetAsync(cancellationToken));
+        Assert.Equal("token-1", await GetTokenAsync(host, cancellationToken));
+        Assert.Equal("token-1", await GetTokenAsync(host, cancellationToken));
 
         host.Time.Advance(TimeSpan.FromSeconds(3540) - TimeSpan.FromTicks(1));
-        Assert.Equal("token-1", await host.Tokens.GetAsync(cancellationToken));
+        Assert.Equal("token-1", await GetTokenAsync(host, cancellationToken));
         Assert.Single(host.OAuth.Requests);
 
         host.Time.Advance(TimeSpan.FromTicks(1));
-        Assert.Equal("token-2", await host.Tokens.GetAsync(cancellationToken));
-        Assert.Equal("token-2", await host.Tokens.GetAsync(cancellationToken));
+        Assert.Equal("token-2", await GetTokenAsync(host, cancellationToken));
+        Assert.Equal("token-2", await GetTokenAsync(host, cancellationToken));
         Assert.Equal(2, host.OAuth.Requests.Count);
     }
 
@@ -108,8 +108,8 @@ public sealed class KohaAccessTokenProviderTests
         using var host = new KohaTestHost(oauth: (_, _) =>
             Task.FromResult(KohaResponses.Token(token: $"token-{++issued}", expiresIn: 60)));
 
-        Assert.Equal("token-1", await host.Tokens.GetAsync(TestContext.Current.CancellationToken));
-        Assert.Equal("token-2", await host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("token-1", await GetTokenAsync(host));
+        Assert.Equal("token-2", await GetTokenAsync(host));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class KohaAccessTokenProviderTests
         using var host = new KohaTestHost(oauth: (_, _) => Task.FromResult(answer()));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
 
         Assert.True(host.OAuth.Requests.Count == 1, name);
         Assert.Contains(host.Logs.Entries, entry => entry.Level == LogLevel.Error);
@@ -213,7 +213,7 @@ public sealed class KohaAccessTokenProviderTests
             Task.FromException<HttpResponseMessage>(new HttpRequestException(HttpRequestError.ConnectionError, "Connection refused.")));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
         Assert.Single(host.OAuth.Requests);
     }
 
@@ -224,7 +224,7 @@ public sealed class KohaAccessTokenProviderTests
             Task.FromException<HttpResponseMessage>(new TaskCanceledException("The request timed out.", new TimeoutException())));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
     }
 
     [Fact]
@@ -238,8 +238,8 @@ public sealed class KohaAccessTokenProviderTests
         using var host = new KohaTestHost(oauth: (_, _) => Task.FromResult(answers.Dequeue()));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
-        Assert.Equal("token-1", await host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
+        Assert.Equal("token-1", await GetTokenAsync(host));
         Assert.Equal(2, host.OAuth.Requests.Count);
     }
 
@@ -250,7 +250,7 @@ public sealed class KohaAccessTokenProviderTests
             KohaResponses.Json(HttpStatusCode.Forbidden, """{"error":"access_denied"}""", KohaResponses.Utf8WithoutHyphen)));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
 
         var entry = Assert.Single(host.Logs.Entries, entry => entry.Level == LogLevel.Error);
         Assert.Equal(403, entry.Values["StatusCode"]);
@@ -268,7 +268,7 @@ public sealed class KohaAccessTokenProviderTests
             KohaResponses.Json(HttpStatusCode.Forbidden, $$"""{"error":"{{error}}"}""", KohaResponses.Utf8WithoutHyphen)));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
 
         var entry = Assert.Single(host.Logs.Entries, entry => entry.Level == LogLevel.Error);
         Assert.Null(entry.Values["OAuthError"]);
@@ -290,7 +290,7 @@ public sealed class KohaAccessTokenProviderTests
             KohaResponses.Utf8WithoutHyphen)));
 
         await Assert.ThrowsAsync<KohaAuthenticationException>(
-            () => host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+            () => GetTokenAsync(host));
 
         var entry = Assert.Single(host.Logs.Entries, entry => entry.Level == LogLevel.Error);
         Assert.Null(entry.Values["OAuthError"]);
@@ -303,10 +303,10 @@ public sealed class KohaAccessTokenProviderTests
         using var host = new KohaTestHost(oauth: (_, _) => Task.FromResult(KohaResponses.Token(token: $"token-{++issued}")));
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        var first = await host.Tokens.GetAsync(cancellationToken);
+        var first = await GetTokenAsync(host, cancellationToken);
         host.Tokens.Invalidate(first);
 
-        Assert.Equal("token-2", await host.Tokens.GetAsync(cancellationToken));
+        Assert.Equal("token-2", await GetTokenAsync(host, cancellationToken));
     }
 
     [Fact]
@@ -316,12 +316,12 @@ public sealed class KohaAccessTokenProviderTests
         using var host = new KohaTestHost(oauth: (_, _) => Task.FromResult(KohaResponses.Token(token: $"token-{++issued}")));
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        var first = await host.Tokens.GetAsync(cancellationToken);
+        var first = await GetTokenAsync(host, cancellationToken);
         host.Tokens.Invalidate(first);
-        var second = await host.Tokens.GetAsync(cancellationToken);
+        var second = await GetTokenAsync(host, cancellationToken);
         host.Tokens.Invalidate(first);
 
-        Assert.Equal(second, await host.Tokens.GetAsync(cancellationToken));
+        Assert.Equal(second, await GetTokenAsync(host, cancellationToken));
         Assert.Equal(2, host.OAuth.Requests.Count);
     }
 
@@ -342,4 +342,10 @@ public sealed class KohaAccessTokenProviderTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WaitAsync(Wait.Limit, TestContext.Current.CancellationToken));
         Assert.DoesNotContain(host.Logs.Entries, entry => entry.Level >= LogLevel.Warning);
     }
+
+    /// <summary>Asks the provider for a token, and fails the test after <see cref="Wait.Limit"/> (TS-007).</summary>
+    private static Task<string> GetTokenAsync(KohaTestHost host, CancellationToken? cancellationToken = null) =>
+        host.Tokens
+            .GetAsync(cancellationToken ?? TestContext.Current.CancellationToken)
+            .WaitAsync(Wait.Limit, TestContext.Current.CancellationToken);
 }

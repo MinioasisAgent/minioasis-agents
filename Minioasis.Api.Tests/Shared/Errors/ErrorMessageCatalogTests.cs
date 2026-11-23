@@ -17,6 +17,9 @@ public sealed class ErrorMessageCatalogTests
         }
         """;
 
+    /// <summary>The messages of the errors of HTTP alone, for a registry that defines nothing.</summary>
+    private const string TeapotOnlyJson = """{ "teapot": { "title": "Teapot", "detail": "I am a teapot." } }""";
+
     [Fact]
     public void Loads_the_messages_of_a_consistent_registry_errors_of_http_and_file()
     {
@@ -44,81 +47,153 @@ public sealed class ErrorMessageCatalogTests
             catalog.Get("method_not_allowed"));
     }
 
-    public static TheoryData<string, ApplicationErrorDefinition?[]> InconsistentRegistries => new()
+    /// <summary>
+    /// Each case breaks one check and names the problem that check reports, so that a case cannot pass on a problem
+    /// that another check reports first.
+    /// </summary>
+    public static TheoryData<string, ApplicationErrorDefinition?[], string> InconsistentRegistries => new()
     {
-        { "empty registry", [] },
-        { "null definition", [Visible, null] },
-        { "blank code", [Visible, new ApplicationErrorDefinition(" ", ApplicationErrorCategory.DependencyUnavailable)] },
-        { "empty code", [Visible, new ApplicationErrorDefinition("", ApplicationErrorCategory.DependencyUnavailable)] },
-        { "duplicate code", [Visible, Internal, new ApplicationErrorDefinition("things.down", ApplicationErrorCategory.Unexpected)] },
-        { "invalid category", [Visible, new ApplicationErrorDefinition("things.odd", (ApplicationErrorCategory)99)] },
-        { "zero category", [Visible, new ApplicationErrorDefinition("things.odd", default)] },
+        { "empty registry", [], "The registry is empty." },
+        { "null definition", [Visible, null], "The registry holds a null definition." },
+        {
+            "blank code",
+            [Visible, new ApplicationErrorDefinition(" ", ApplicationErrorCategory.DependencyUnavailable)],
+            "The registry holds a definition with a blank code."
+        },
+        {
+            "empty code",
+            [Visible, new ApplicationErrorDefinition("", ApplicationErrorCategory.DependencyUnavailable)],
+            "The registry holds a definition with a blank code."
+        },
+        {
+            "duplicate code",
+            [Visible, Internal, new ApplicationErrorDefinition("things.down", ApplicationErrorCategory.Unexpected)],
+            "The code things.down is defined more than once."
+        },
+        {
+            "invalid category",
+            [Visible, new ApplicationErrorDefinition("things.odd", (ApplicationErrorCategory)99)],
+            "The definition things.odd has an invalid category."
+        },
+        {
+            "zero category",
+            [Visible, new ApplicationErrorDefinition("things.odd", default)],
+            "The definition things.odd has an invalid category."
+        },
     };
 
     [Theory]
     [MemberData(nameof(InconsistentRegistries))]
-    public void Refuses_an_inconsistent_registry(string name, ApplicationErrorDefinition?[] definitions)
+    public void Refuses_an_inconsistent_registry(string name, ApplicationErrorDefinition?[] definitions, string problem)
     {
+        var json = definitions.Length == 0 ? TeapotOnlyJson : ValidJson;
+
         var exception = Assert.Throws<InvalidOperationException>(
-            () => ErrorMessageCatalog.Load(Registry(definitions), [Teapot], ValidJson));
-        Assert.False(string.IsNullOrWhiteSpace(exception.Message), name);
+            () => ErrorMessageCatalog.Load(Registry(definitions), [Teapot], json));
+        Assert.True(exception.Message.Contains(problem, StringComparison.Ordinal), $"{name}: {exception.Message}");
     }
 
     /// <summary>Keyed by case name, because a test method cannot take Api's internal type as a parameter.</summary>
-    private static readonly Dictionary<string, HttpErrorDefinition?[]> InconsistentErrorsOfHttp = new()
-    {
-        ["null definition"] = [Teapot, null],
-        ["blank code"] = [Teapot, new HttpErrorDefinition(" ", 404)],
-        ["empty code"] = [Teapot, new HttpErrorDefinition("", 404)],
-        ["duplicate code"] = [Teapot, new HttpErrorDefinition("teapot", 404)],
-        ["code of an Application definition"] = [Teapot, new HttpErrorDefinition("things.not_found", 404)],
-        ["server status"] = [Teapot with { Status = 503 }],
-        ["success status"] = [Teapot with { Status = 200 }],
-        ["status below 400"] = [Teapot with { Status = 399 }],
-        ["status above 499"] = [Teapot with { Status = 500 }],
-        ["without a message"] = [Teapot, new HttpErrorDefinition("gone", 410)],
-    };
+    private static readonly Dictionary<string, (HttpErrorDefinition?[] Errors, string Problem)> BadErrorsOfHttp =
+        new()
+        {
+            ["null definition"] = ([Teapot, null], "The errors of HTTP itself hold a null definition."),
+            ["blank code"] = ([Teapot, new HttpErrorDefinition(" ", 404)], HttpBlankCode),
+            ["empty code"] = ([Teapot, new HttpErrorDefinition("", 404)], HttpBlankCode),
+            ["duplicate code"] =
+                ([Teapot, new HttpErrorDefinition("teapot", 404)], Duplicate("teapot")),
+            ["code of an Application definition"] =
+                ([Teapot, new HttpErrorDefinition("things.not_found", 404)], Duplicate("things.not_found")),
+            ["server status"] = ([Teapot with { Status = 503 }], NotAClientError(503)),
+            ["success status"] = ([Teapot with { Status = 200 }], NotAClientError(200)),
+            ["status below 400"] = ([Teapot with { Status = 399 }], NotAClientError(399)),
+            ["status above 499"] = ([Teapot with { Status = 500 }], NotAClientError(500)),
+            ["without a message"] =
+                ([Teapot, new HttpErrorDefinition("gone", 410)], "The client-visible error gone has no message."),
+        };
 
-    public static TheoryData<string> InconsistentErrorsOfHttpCases => [.. InconsistentErrorsOfHttp.Keys];
+    public static TheoryData<string> InconsistentErrorsOfHttpCases => [.. BadErrorsOfHttp.Keys];
 
     [Theory]
     [MemberData(nameof(InconsistentErrorsOfHttpCases))]
     public void Refuses_an_inconsistent_error_of_http(string name)
     {
+        var (errors, problem) = BadErrorsOfHttp[name];
+
         var exception = Assert.Throws<InvalidOperationException>(
-            () => ErrorMessageCatalog.Load(Registry(Visible, Internal), InconsistentErrorsOfHttp[name], ValidJson));
-        Assert.False(string.IsNullOrWhiteSpace(exception.Message), name);
+            () => ErrorMessageCatalog.Load(Registry(Visible, Internal), errors, ValidJson));
+        Assert.True(exception.Message.Contains(problem, StringComparison.Ordinal), $"{name}: {exception.Message}");
     }
 
-    public static TheoryData<string, string> InconsistentMessageFiles => new()
+    /// <summary>
+    /// A case that breaks one message keeps a valid <c>things.not_found</c> and puts the bad entry under a second key,
+    /// so that the required message is never missing and the case's own check is the one that reports.
+    /// </summary>
+    public static TheoryData<string, string, string> InconsistentMessageFiles => new()
     {
-        { "client-visible definition without a message", "{}" },
-        { "message for an internal error", """{ "things.not_found": { "title": "T", "detail": "D" }, "things.down": { "title": "T", "detail": "D" } }""" },
-        { "unknown message", """{ "things.not_found": { "title": "T", "detail": "D" }, "things.unknown": { "title": "T", "detail": "D" } }""" },
-        { "duplicate message", """{ "things.not_found": { "title": "T", "detail": "D" }, "things.not_found": { "title": "T", "detail": "D" } }""" },
-        { "null message", """{ "things.not_found": null }""" },
-        { "malformed file", """{ "things.not_found": { "title": "T", "detail": "D" }""" },
-        { "file that is not an object", """[ { "title": "T", "detail": "D" } ]""" },
-        { "message that is not an object", """{ "things.not_found": "Thing not found" }""" },
-        { "title that is not a string", """{ "things.not_found": { "title": 1, "detail": "D" } }""" },
-        { "detail that is not a string", """{ "things.not_found": { "title": "T", "detail": ["D"] } }""" },
-        { "message with an unknown field", """{ "things.not_found": { "title": "T", "detail": "D", "type": "x" } }""" },
-        { "missing title", """{ "things.not_found": { "detail": "D" } }""" },
-        { "missing detail", """{ "things.not_found": { "title": "T" } }""" },
-        { "blank title", """{ "things.not_found": { "title": " ", "detail": "D" } }""" },
-        { "blank detail", """{ "things.not_found": { "title": "T", "detail": "" } }""" },
-        { "null title", """{ "things.not_found": { "title": null, "detail": "D" } }""" },
-        { "empty file", "" },
+        {
+            "client-visible definition without a message",
+            "{}",
+            "The client-visible error things.not_found has no message."
+        },
+        {
+            "message for an internal error",
+            WithSecondMessage(ValidMessage, key: "things.down"),
+            "The message things.down belongs to a server failure, which is never shown to a client."
+        },
+        {
+            "unknown message",
+            WithSecondMessage(ValidMessage, key: "things.unknown"),
+            "The message things.unknown belongs to no defined error."
+        },
+        {
+            "duplicate message",
+            WithSecondMessage(ValidMessage, key: "things.not_found"),
+            "The message things.not_found appears more than once."
+        },
+        { "null message", WithSecondMessage("null"), "The message things.other is null." },
+        { "malformed file", $$"""{ "things.not_found": {{ValidMessage}}""", "The message file is not valid JSON." },
+        { "empty file", "", "The message file is not valid JSON." },
+        { "file that is not an object", $"[ {ValidMessage} ]", "The message file is not a JSON object." },
+        { "message that is not an object", WithSecondMessage("\"Thing not found\""), Malformed },
+        { "message that is an array", WithSecondMessage("""[ "T", "D" ]"""), Malformed },
+        { "message with an unknown field", WithSecondMessage("""{ "title": "T", "detail": "D", "x": 1 }"""), Malformed },
+        { "title that is not a string", WithSecondMessage("""{ "title": 1, "detail": "D" }"""), Incomplete },
+        { "detail that is not a string", WithSecondMessage("""{ "title": "T", "detail": ["D"] }"""), Incomplete },
+        { "missing title", WithSecondMessage("""{ "detail": "D" }"""), Incomplete },
+        { "missing detail", WithSecondMessage("""{ "title": "T" }"""), Incomplete },
+        { "blank title", WithSecondMessage("""{ "title": " ", "detail": "D" }"""), Incomplete },
+        { "blank detail", WithSecondMessage("""{ "title": "T", "detail": "" }"""), Incomplete },
+        { "null title", WithSecondMessage("""{ "title": null, "detail": "D" }"""), Incomplete },
     };
 
     [Theory]
     [MemberData(nameof(InconsistentMessageFiles))]
-    public void Refuses_an_inconsistent_message_file(string name, string json)
+    public void Refuses_an_inconsistent_message_file(string name, string json, string problem)
     {
         var exception = Assert.Throws<InvalidOperationException>(
             () => ErrorMessageCatalog.Load(Registry(Visible, Internal), [], json));
-        Assert.False(string.IsNullOrWhiteSpace(exception.Message), name);
+        Assert.True(exception.Message.Contains(problem, StringComparison.Ordinal), $"{name}: {exception.Message}");
     }
+
+    private const string ValidMessage = """{ "title": "T", "detail": "D" }""";
+
+    private const string HttpBlankCode = "The errors of HTTP itself hold a definition with a blank code.";
+
+    private const string Malformed =
+        "The message things.other is malformed: it must be an object with only a title and a detail.";
+
+    private const string Incomplete =
+        "The message things.other is incomplete: it needs a title and a detail that are not blank.";
+
+    private static string Duplicate(string code) => $"The code {code} is defined more than once.";
+
+    private static string NotAClientError(int status) =>
+        $"The error of HTTP itself teapot has the status {status}, which is not a client error.";
+
+    /// <summary>A valid <c>things.not_found</c>, and the given value under a second key.</summary>
+    private static string WithSecondMessage(string value, string key = "things.other") =>
+        $$"""{ "things.not_found": {{ValidMessage}}, "{{key}}": {{value}} }""";
 
     private static ApplicationErrorRegistry Registry(params ApplicationErrorDefinition?[] definitions) => new(definitions);
 }

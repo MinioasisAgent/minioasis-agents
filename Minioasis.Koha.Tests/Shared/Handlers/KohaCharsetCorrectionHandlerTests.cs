@@ -44,6 +44,8 @@ public sealed class KohaCharsetCorrectionHandlerTests
         using var invoker = new HttpMessageInvoker(
             new KohaCharsetCorrectionHandler { InnerHandler = new StubHttpMessageHandler(_ => answer) });
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://koha.test/api/v1/items/1");
-        return await invoker.SendAsync(request, TestContext.Current.CancellationToken);
+        return await invoker
+            .SendAsync(request, TestContext.Current.CancellationToken)
+            .WaitAsync(Wait.Limit, TestContext.Current.CancellationToken);
     }
 }

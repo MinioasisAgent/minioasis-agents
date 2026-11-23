@@ -49,7 +49,11 @@ public sealed class KohaBearerHandlerTests
                 Assert.Equal(new Uri("https://koha.test/api/v1/items/12"), retry.Uri);
                 Assert.Equal("application/json", Assert.Single(retry.Headers.Accept).MediaType);
             });
-        Assert.Equal("token-2", await host.Tokens.GetAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(
+            "token-2",
+            await host.Tokens
+                .GetAsync(TestContext.Current.CancellationToken)
+                .WaitAsync(Wait.Limit, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -145,6 +149,8 @@ public sealed class KohaBearerHandlerTests
             request.Content = new StringContent("{}");
         }
 
-        return await invoker.SendAsync(request, cancellationToken ?? TestContext.Current.CancellationToken);
+        return await invoker
+            .SendAsync(request, cancellationToken ?? TestContext.Current.CancellationToken)
+            .WaitAsync(Wait.Limit, TestContext.Current.CancellationToken);
     }
 }
