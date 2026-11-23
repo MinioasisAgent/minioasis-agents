@@ -57,6 +57,7 @@
 
       "includedOperationIds": [],
       "excludedOperationIds": [],
+      "excludedParameterNames": [ "x-koha-embed" ],
 
       "generateOptionalParameters": false,
 
