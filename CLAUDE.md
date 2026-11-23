@@ -135,7 +135,7 @@ The session that talks with tundx is the **coordinator**. It decides the level o
 | --- | --- |
 | `coder` | Application code and tests |
 | `reviewer` | Every review of a pull request, and every brief check |
-| `verifier` | Verifying a capability whose brief requires it |
+| `verifier` | Verifying every capability, after its code is written and reviewed |
 
 Each role has a file in `.claude/agents/`. The file sets the role's model and default effort, and holds its procedure. Start a role by its name.
 

@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-23
 
 # Process
 
@@ -16,7 +16,7 @@ A **brief** is one document that describes one **capability**: what staff need, 
 | 3. Check the brief | A new `reviewer` looks for the decision that is most likely wrong, and for holes (section 4). | `reviewer` | Findings, or none |
 | 4. Approve | The maintainer accepts the brief's pull request (section 5). | Maintainer | Status `approved` |
 | 5. Build | One coder builds the whole capability, tests first (section 6). A new `reviewer` reviews it (section 7). | `coder`, then `reviewer` | A pull request |
-| 6. Verify | Only where the brief requires it (section 8). | `verifier` | The result, in the pull request |
+| 6. Verify | Every capability, after its review (section 8). | `verifier` | The result, in the pull request |
 | 7. Finish | Set the status, merge, and mark the commit that the maintainer transfers (section 9). | Coordinator | Status `built`, branch `ready/<NNN>-<short-name>` |
 | 8. Transfer | The maintainer tests the running capability and merges it into production (`docs/transfer.md`). | Maintainer | Status `transferred` |
 
@@ -41,11 +41,11 @@ draft ──► approved ──► built ──► transferred
 | --- | --- | --- |
 | `draft` | The brief is being discussed, written, or checked. | |
 | `approved` | The maintainer accepted the brief's pull request (`CLAUDE.md`, section 3). | Set in that pull request before it merges. If the maintainer merged it, set in the next pull request for the capability. Writing `approved` without acceptance breaks the rules. |
-| `built` | Every behavior in part 6 is built. The review found no blocking issue. The verification passed where the brief requires it. The checks pass, the test Koha checks included. | Set as section 9 describes. |
+| `built` | Every behavior in part 6 is built. The review found no blocking issue. The verification passed. The checks pass, the test Koha checks included. | Set as section 9 describes. |
 | `transferred` | The maintainer reported the merge into production, and the result of the manual acceptance or that it was skipped (section 9). | |
 | `rejected` | The maintainer decided not to pursue the capability. | The brief records the reason. The file and the number are kept. |
 
-The coordinator sets every status. The `Status:` line at the top of the brief is the only source. `docs/ROADMAP.md` repeats it and is updated in the same pull request.
+The coordinator sets every status. The `Status:` line at the top of the brief is the only source.
 
 ## 2. Discuss
 
@@ -74,7 +74,7 @@ Keep the brief short enough to read in one sitting, about three pages. If it gro
 | --- | --- |
 | 1. Goal | What staff can do afterwards, in one or two sentences. |
 | 2. What people do and see | The walk-through, step by step. The maintainer tests the finished capability by following it. |
-| 3. The API | Routes, requests, response fields, error codes, and the text staff see. Who may call it. What the Koha service account must be allowed to do (`EX-005`). Which patron data is returned. |
+| 3. The API | Routes, requests, response fields, error codes, and the text staff see. Who may call it. Which patron data is returned. |
 | 4. Decisions | Each decision with who made it and why. What still needs the maintainer's decision. What the author is least sure of. |
 | 5. Not included | What the capability deliberately leaves out. |
 | 6. Behaviors that must have a test | One numbered line each, including what the system must never do. |
@@ -95,7 +95,7 @@ Five rules for the brief:
 
 ## 4. Check the brief
 
-The coordinator starts a new `reviewer` and gives it the brief, not the coordinator's own explanation. The reviewer answers the two questions of the brief check. The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`.
+By default, the coordinator starts a new `reviewer` and gives it the brief, not the coordinator's own explanation. The coordinator may decide that a brief needs no check, and then states the reason in the brief's pull request. Code is always reviewed. The reviewer answers the two questions of the brief check. The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`.
 
 Why: the checks of the first capability asked only whether the documents were complete and consistent. A wrong decision, recorded consistently, passed every check. This check asks whether the decisions are right.
 
@@ -165,27 +165,27 @@ If a session ends with work unfinished, push the branch, and end the draft pull 
 
 ## 7. Review
 
-Every pull request is checked by a new session before it merges.
+Every pull request is checked by a new session before it merges. The one exception is a brief that the coordinator decides needs no check (section 4).
 
 | Check | For | Role |
 | --- | --- | --- |
 | Brief check | A pull request that writes or revises a brief (section 4) | `reviewer` |
 | Review | Every other pull request, including a wording correction to a brief | `reviewer` |
-| Verification | A capability whose brief requires it, once, before its last pull request merges (section 8) | `verifier` |
+| Verification | Every capability, one time, after the review of its last pull request and before that pull request merges (section 8) | `verifier` |
 
 1. **Each check is independent.** The coordinator starts each check as a new session that did not write the work (`CLAUDE.md`, section 4, rule 2). It gives that session the brief and the code, not the author's explanation. A session that has already checked the work is not new: each round starts another.
 2. **The reviewer runs on a different model family from the coders.** If the session that wrote the work ran on the reviewer's family, the pull request says so.
 
    Why: a model does not notice in a review the design problems that it does not notice when it writes.
 3. **A review is a second look, not proof.** The independent evidence is the maintainer's test of the running capability at transfer.
-4. **The reviewer answers four questions and reports each rule that the change breaks.** The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`. The reviewer does not list a verdict for every rule. A change that works but breaks a rule does not pass. The outcome is recorded under "Review" in the pull request.
+4. **The reviewer answers three questions and reports each rule that the change breaks.** Whether the tests would catch a broken behavior is the verifier's question alone (section 8). The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`. The reviewer does not list a verdict for every rule. A change that works but breaks a rule does not pass. The outcome is recorded under "Review" in the pull request.
 5. **What no check has shown is never reported as a pass.** A belief about Koha that only a test double supports is not a pass either: the test Koha must have shown it (`TS-013`). Mark such items "needs maintainer" under "Not proven" in the pull request, so that the maintainer checks them at transfer. A confident guess that is recorded as a pass breaks these rules.
 
 ## 8. Verify
 
-A capability that changes data in Koha is always verified. A brief may also require verification for another capability where the risk justifies the time, for example one that handles credentials. The brief gives the reason, and the maintainer accepts it with the brief. For every other capability, the fourth question of the review does this work.
+Every capability is verified one time: after its code is written and the review of its last pull request found no blocking issue, and before that pull request merges. A brief is never verified. A brief is checked (section 4).
 
-Why: a wrong read shows on the screen at transfer. A wrong write changes a record, and a retry can repeat it. So the time is spent where the damage would be.
+Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The reviewer does not do this work (section 7, rule 4), so the check has one owner.
 
 ### The bar
 
@@ -210,8 +210,8 @@ The verifier lists the behaviors itself, from the words of the brief. The author
 
 ### Setting `built`
 
-1. The coordinator sets `built` when three things hold: the review found no blocking issue, the verification passed where the brief requires it, and the checks pass, the test Koha checks included (section 13).
-2. To set it, the coordinator adds one commit to the capability's last pull request. The commit sets the brief's status to `built`, updates the capability's entries in `docs/ROADMAP.md` and `docs/STATE.md`, and updates the header date of each file it changes. It changes nothing else. This commit needs no new review.
+1. The coordinator sets `built` when three things hold: the review found no blocking issue, the verification passed, and the checks pass, the test Koha checks included (section 13).
+2. To set it, the coordinator adds one commit to the capability's last pull request. The commit sets the brief's status to `built`, updates the capability's entry in `docs/STATE.md`, and updates the header date of each file it changes. It changes nothing else. This commit needs no new review.
 3. If the maintainer accepted a merge with a test Koha check that could not run, the brief stays `approved`. Once the check has run and passed, the coordinator sets `built` with the same kind of commit, in a pull request of its own. That pull request has a review, and its reviewer runs the test Koha checks.
 
 ### The `ready/` branch
@@ -225,7 +225,7 @@ If a built capability needs a fix afterwards:
 1. If behavior from a later capability is already on `master`, stop and ask the maintainer.
 
    Why: a `ready/` branch cut from `master` would carry that unfinished work.
-2. Otherwise, fix it in a normal pull request with its review. For a capability whose brief requires verification, a new `verifier` also re-checks the behaviors that the fix touches.
+2. Otherwise, fix it in a normal pull request with its review. A new `verifier` also re-checks the behaviors that the fix touches.
 3. Create `ready/<NNN>-<short-name>-2` (then `-3`, and so on) at the `master` commit that merges the fix.
 
 ### After the transfer
@@ -314,7 +314,7 @@ An agent may merge its own Level 1 pull request only when all of these hold:
 4. Every test Koha check that applies ran and passed (section 13). If one could not run, the pull request is Level 2, because it would merge with a check left out (`CLAUDE.md`, section 3, item 5). Label it `needs-human`, and say which check and why.
 
    Why: without this, a capability could again be built on a belief about Koha that nothing has tested.
-5. For a capability whose brief requires verification, the verification passed before the capability's last pull request merges.
+5. For a capability's last pull request: the verification passed (section 8).
 6. `docs/STATE.md` and `docs/ROADMAP.md` are updated where their content changed.
 
 Merge with **squash**, then delete the task branch. The one exception is a production sync, which merges with a merge commit (`docs/transfer.md`, section 4).

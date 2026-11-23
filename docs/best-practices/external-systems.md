@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-23
 
 # External systems
 
@@ -82,7 +82,7 @@ var httpClient = httpClientFactory.CreateClient(KohaClientNames.Api);
 
 ## EX-005 Use a least-privilege service identity, and keep credentials out of source
 
-Minioasis signs in to Koha as a service account. Give that account only the Koha permissions that approved briefs list. A wider permission is a larger loss if the credentials leak.
+Minioasis signs in to Koha as a service account. Give that account only the Koha permissions that Minioasis's operations need. The contract names the permission of each operation. A wider permission is a larger loss if the credentials leak.
 
 Credentials are read at run time through ASP.NET configuration, from `MINIOASIS_KOHA_BASE_URL`, `MINIOASIS_KOHA_CLIENT_ID`, and `MINIOASIS_KOHA_CLIENT_SECRET`. Real values never enter source control or diagnostic output (`ER-008`).
 

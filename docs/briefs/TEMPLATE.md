@@ -1,11 +1,10 @@
 - **Access:** Level 1 <!-- For the copy: Level 2 once approved (`docs/process.md`, section 3). This template itself is Level 2. -->
-- **Last Updated:** <date> <!-- Template last updated: 2026-11-22 -->
+- **Last Updated:** <date> <!-- Template last updated: 2026-11-23 -->
 
 # <NNN> — <Capability name>
 
 - **Status:** draft <!-- draft, approved, built, transferred, or rejected -->
-- **Changes data in Koha:** yes | no <!-- yes: part 8 and verification are required -->
-- **Verification:** required | not required <!-- Required when the capability changes data in Koha. Otherwise "not required", unless the risk justifies it. Then give the reason. -->
+- **Changes data in Koha:** yes | no <!-- yes: part 8 is required -->
 - **Related:** <other briefs, issues>
 
 ## 1. Goal
@@ -28,7 +27,7 @@
 
 <Internal codes that are only logged. Configuration names. The Koha operations used, each marked read or write, with the focused contract. Write "None" where there are none.>
 
-<Who may call it. What the Koha service account must be allowed to do (`EX-005`). Which patron data is returned. That no patron data is logged, or what is logged and why.>
+<Who may call it. Which patron data is returned. That no patron data is logged, or what is logged and why.>
 
 ## 4. Decisions
 
