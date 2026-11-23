@@ -77,7 +77,6 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 **Security**
 
 - **Who may call it: anyone who can reach the API.** Staff sign-in does not exist yet, and this brief sets no listening address. The maintainer's design is that the API listens on localhost only and validates the Cloudflare Access token that the user interface forwards; that is the next brief (part 5).
-- Get item works only if the Koha service account has the `catalogue` permission, as the contract states for `getItem`.
 - No patron data is read, returned, or logged.
 - The log may hold the trace identifier, internal error codes, HTTP status codes, the `error` word of a Koha token response (`access_denied` for a wrong secret and `unauthorized_client` for an unknown client identifier, on the test Koha, 26.05), logged only when it is at most 64 characters, and the Koha client identifier. It never holds the client secret, an access token, or an `Authorization` header (`ER-008`).
 
@@ -118,7 +117,7 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 | A response handler on both Koha HTTP clients corrects the content type `charset=utf8` to `utf-8`. | Leave it. | Test Koha, 26.05, 2026-11-23: a 401 carries `Content-Type: application/json; charset=utf8`. .NET 10 refuses to read that body, so the generated client would throw an error without a status, and a 401 or 403 would be logged as `system.unexpected` instead of an authentication failure. Found by the second brief check. |
 | The text of `not_found` and `method_not_allowed` in part 3. | None. | The maintainer chose the codes; the wording is the agent's, for the maintainer to accept with this brief (`ER-003`). |
 | `MINIOASIS_KOHA_BASE_URL` must be `https`, except for a loopback host. | Any `http` address; or `https` only. | RFC 6749, sections 2.3.1 and 3.2, and RFC 6750, section 5.3, require TLS wherever the secret or the token travels. Traffic to the same machine never leaves it, so `http` there exposes nothing, and Koha on the same machine is often plain HTTP. |
-| A new error category, "method not allowed", with status 405, is added to the table of `ER-004`. | Leave the framework's empty 405; or answer a wrong method with 404. | `ER-011` allows a client-visible message only for a registered definition, and every definition needs a category. An empty 405 breaks the maintainer's "one shape" decision; a 404 would misreport the cause. This pull request makes that one-row edit to `docs/best-practices/errors.md`. |
+| `not_found` and `method_not_allowed` are errors of HTTP itself, defined in Api with their code and status (`ER-004`). | A "method not allowed" category in Application. | `AR-003`: Application knows nothing of HTTP. The maintainer's decision, 2026-11-23. |
 
 **Needs your decision**
 
@@ -127,9 +126,7 @@ None.
 **Least sure of**
 
 - **The base URL rule.** If production Minioasis reaches Koha over plain HTTP on another machine of a private network, the application will refuse to start, and this decision must change before transfer.
-- **The 405 category.** It is the only edit to a rule file. If the maintainer prefers no rule change, the alternative is to drop the 405 row and leave the framework's answer.
 - **Koha's answers outside the contract.** The contract documents only 200, 400, 404, 500, and 503 for `getItem`. The content type of a real 403 is unknown, because the test account has the permission. The whole item is read for four fields, so one field that departs from the contract makes every read a 502.
-- **"Method not allowed" as an Application category.** It is an HTTP idea among business categories. It is there only because `ER-011` ties every client-visible message to a registered definition.
 
 ## 5. Not included
 
@@ -170,7 +167,7 @@ None.
 **Error contract**
 
 19. Every error response has the shape and content type of part 3, with `code` and `traceId`, and without `type` and `instance`.
-20. Each category gives its status: validation 400, not found 404, method not allowed 405, unusable dependency response 502, dependency unavailable 503, dependency authentication 500, unexpected 500.
+20. Each category gives its status: validation 400, not found 404, unusable dependency response 502, dependency unavailable 503, dependency authentication 500, unexpected 500.
 21. A 500, 502, or 503 has the title "Internal error", the code `internal_error`, and no `detail`, the same in Development and in Production, for a returned failure and for an unhandled exception.
 22. For each server failure, the log holds the internal error code and the operation name, or the exception, with the `traceId` that the response carries.
 23. An unknown path and `GET /api/v1/items/` return 404 `not_found`. `POST /api/v1/items/1` returns 405 `method_not_allowed` with the header `Allow: GET`. All are in the shape of behavior 19.
@@ -192,11 +189,10 @@ Three layers, as `docs/best-practices/architecture.md` describes. Application ho
 | `Minioasis.Koha` | `Microsoft.AspNetCore.App` (framework reference, not a package) | .NET 10 | `IHttpClientFactory`, options, configuration, and logging, without separate packages. |
 | `Minioasis.Api.Tests` | `Microsoft.AspNetCore.Mvc.Testing` | 10.0.15 | Runs the API in memory for the endpoint and error tests. |
 
-Each production project lets its own test project see its internal types. The code reads the time from .NET's built-in `TimeProvider`, and the tests replace it with a handwritten fake (`TS-007`); no package is needed. The definitions `not_found`, `method_not_allowed`, `system.unexpected`, and the three `koha.*` definitions belong to no single feature, so they sit in shared groups in Application.
+Each production project lets its own test project see its internal types. The code reads the time from .NET's built-in `TimeProvider`, and the tests replace it with a handwritten fake (`TS-007`); no package is needed. `not_found` and `method_not_allowed` are defined in Api (`ER-004`). `system.unexpected` and the three `koha.*` definitions belong to no single feature, so they sit in shared groups in Application.
 
 - **Contracts:** `contracts/oauth.openapi.json` and `contracts/items.openapi.json`, each copied faithfully from the official contract (`EX-002`). The clients are generated by NSwag into `Minioasis.Koha/Generated/OAuth` and `Minioasis.Koha/Generated/Items` (`EX-003`). The build writes the exact generation command into `docs/running.md`.
 - **Test Koha checks:** in `Minioasis.Koha.Tests`, marked so that they can be run alone, and skipped when the five `MINIOASIS_TEST_KOHA_*` variables are absent. They add the two Cloudflare Access headers through a test-only handler; the application's code does not know about them. `MINIOASIS_TEST_KOHA_BASE_URL` has the format of `MINIOASIS_KOHA_BASE_URL`; the maintainer adds `https://` to its present value, which is a bare host. The check for behaviors 1 and 5 creates a bibliographic record and an item (`POST /biblios`, `POST /biblios/{biblio_id}/items`), reads the item through the adapter, and deletes both. These set-up and clean-up calls are handwritten HTTP calls in the test project only. Their paths and fields come from the official contract (`EX-001`); they are not in the focused contracts, because the application never makes them. `POST /biblios` takes MARC-in-JSON with the content type `application/marc-in-json`. The check for behavior 14 gives the token provider an invalid token first: the test Koha answers 401 to it, and the retry succeeds. The test Koha's service account may do this (26.05, 2026-11-23: 200 and 201); the application's own account needs only `catalogue`. The build writes into `docs/running.md` how the checks are run.
-- **Rule file:** `docs/best-practices/errors.md`, `ER-004`, gains the row "Method not allowed: the route does not support the request method | 405" in this pull request.
 
 ## Acceptance
 

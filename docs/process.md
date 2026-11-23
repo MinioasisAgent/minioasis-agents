@@ -45,7 +45,7 @@ draft ──► approved ──► built ──► transferred
 | `transferred` | The maintainer reported the merge into production, and the result of the manual acceptance or that it was skipped (section 9). | |
 | `rejected` | The maintainer decided not to pursue the capability. | The brief records the reason. The file and the number are kept. |
 
-The coordinator sets every status. The `Status:` line at the top of the brief is the only source. `docs/ROADMAP.md` repeats it and is updated in the same pull request.
+The coordinator sets every status. The `Status:` line at the top of the brief is the only source.
 
 ## 2. Discuss
 
@@ -74,7 +74,7 @@ Keep the brief short enough to read in one sitting, about three pages. If it gro
 | --- | --- |
 | 1. Goal | What staff can do afterwards, in one or two sentences. |
 | 2. What people do and see | The walk-through, step by step. The maintainer tests the finished capability by following it. |
-| 3. The API | Routes, requests, response fields, error codes, and the text staff see. Who may call it. What the Koha service account must be allowed to do (`EX-005`). Which patron data is returned. |
+| 3. The API | Routes, requests, response fields, error codes, and the text staff see. Who may call it. Which patron data is returned. |
 | 4. Decisions | Each decision with who made it and why. What still needs the maintainer's decision. What the author is least sure of. |
 | 5. Not included | What the capability deliberately leaves out. |
 | 6. Behaviors that must have a test | One numbered line each, including what the system must never do. |
@@ -95,7 +95,7 @@ Five rules for the brief:
 
 ## 4. Check the brief
 
-The coordinator starts a new `reviewer` and gives it the brief, not the coordinator's own explanation. The reviewer answers the two questions of the brief check. The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`.
+By default, the coordinator starts a new `reviewer` and gives it the brief, not the coordinator's own explanation. The coordinator may decide that a brief needs no check, and then states the reason in the brief's pull request. Code is always reviewed. The reviewer answers the two questions of the brief check. The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`.
 
 Why: the checks of the first capability asked only whether the documents were complete and consistent. A wrong decision, recorded consistently, passed every check. This check asks whether the decisions are right.
 
@@ -165,7 +165,7 @@ If a session ends with work unfinished, push the branch, and end the draft pull 
 
 ## 7. Review
 
-Every pull request is checked by a new session before it merges.
+Every pull request is checked by a new session before it merges. The one exception is a brief that the coordinator decides needs no check (section 4).
 
 | Check | For | Role |
 | --- | --- | --- |
@@ -211,7 +211,7 @@ The verifier lists the behaviors itself, from the words of the brief. The author
 ### Setting `built`
 
 1. The coordinator sets `built` when three things hold: the review found no blocking issue, the verification passed, and the checks pass, the test Koha checks included (section 13).
-2. To set it, the coordinator adds one commit to the capability's last pull request. The commit sets the brief's status to `built`, updates the capability's entries in `docs/ROADMAP.md` and `docs/STATE.md`, and updates the header date of each file it changes. It changes nothing else. This commit needs no new review.
+2. To set it, the coordinator adds one commit to the capability's last pull request. The commit sets the brief's status to `built`, updates the capability's entry in `docs/STATE.md`, and updates the header date of each file it changes. It changes nothing else. This commit needs no new review.
 3. If the maintainer accepted a merge with a test Koha check that could not run, the brief stays `approved`. Once the check has run and passed, the coordinator sets `built` with the same kind of commit, in a pull request of its own. That pull request has a review, and its reviewer runs the test Koha checks.
 
 ### The `ready/` branch

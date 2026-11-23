@@ -28,7 +28,7 @@ Read the brief, and whatever tests a claim in it: the contract, the standard it 
 1. **Which decision in part 4 is most likely wrong, and why?** Check the evidence behind each decision that the agent made. Challenge the maintainer's decisions in the same way. Look for decisions that the brief makes without listing them.
 2. **Where are the holes?** A hole is any of these:
    - a route, field, or error code in part 3 that two readers could build differently;
-   - a security question left open, such as who may call the API, what the service account may do, or where a secret or patron data goes;
+   - a security question left open, such as who may call the API, or where a secret or patron data goes;
    - a behavior in part 6 that no test could fail on;
    - a behavior that part 7 gives no way to build, or a package without a need;
    - a failure that part 8 does not decide;

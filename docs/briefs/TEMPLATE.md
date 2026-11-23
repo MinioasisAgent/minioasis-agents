@@ -27,7 +27,7 @@
 
 <Internal codes that are only logged. Configuration names. The Koha operations used, each marked read or write, with the focused contract. Write "None" where there are none.>
 
-<Who may call it. What the Koha service account must be allowed to do (`EX-005`). Which patron data is returned. That no patron data is logged, or what is logged and why.>
+<Who may call it. Which patron data is returned. That no patron data is logged, or what is logged and why.>
 
 ## 4. Decisions
 
