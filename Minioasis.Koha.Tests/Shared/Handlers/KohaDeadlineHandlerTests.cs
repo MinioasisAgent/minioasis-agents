@@ -61,7 +61,8 @@ public sealed class KohaDeadlineHandlerTests
         await time.WaitForPendingTimersAsync(1);
         time.Advance(TimeSpan.FromSeconds(10));
 
-        await Assert.ThrowsAsync<TimeoutException>(() => sending.WaitAsync(Wait.Limit, TestContext.Current.CancellationToken));
+        var exception = await Assert.ThrowsAsync<TimeoutException>(() => sending.WaitAsync(Wait.Limit, TestContext.Current.CancellationToken));
+        Assert.IsAssignableFrom<OperationCanceledException>(exception.InnerException);
     }
 
     [Fact]
