@@ -173,7 +173,9 @@ public sealed class KohaAccessTokenProviderTests
         Assert.False(waiting.IsCompleted);
 
         host.Time.Advance(TimeSpan.FromTicks(1));
-        await Assert.ThrowsAsync<KohaAuthenticationException>(() => waiting.WaitAsync(Wait.Limit, TestContext.Current.CancellationToken));
+        var exception = await Assert.ThrowsAsync<KohaAuthenticationException>(
+            () => waiting.WaitAsync(Wait.Limit, TestContext.Current.CancellationToken));
+        Assert.IsType<TimeoutException>(exception.InnerException);
     }
 
     public static TheoryData<string, Func<HttpResponseMessage>> FailedTokenAnswers => new()

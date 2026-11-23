@@ -15,8 +15,9 @@ namespace Minioasis.Koha.Authentication.Providers;
 /// <remarks>
 /// The client identifier and secret travel in the HTTP Basic header that the OAuth client carries; the form body
 /// holds only the grant type. A token is reused while more than 60 seconds of its lifetime remain. Callers that
-/// need a token at the same moment wait for one shared request, which is bounded by its own deadline, so that a
-/// caller that leaves does not cancel it for the others. A token request is never retried.
+/// need a token at the same moment wait for one shared request, which no caller's cancellation reaches, so that a
+/// caller that leaves does not cancel it for the others. The deadline handler on the OAuth client bounds that request
+/// (EX-011, CD-006). A token request is never retried.
 /// </remarks>
 internal sealed partial class KohaAccessTokenProvider(
     IHttpClientFactory httpClientFactory,
@@ -80,7 +81,6 @@ internal sealed partial class KohaAccessTokenProvider(
     private async Task<CachedToken> RequestTokenAsync()
     {
         var requestedAt = timeProvider.GetUtcNow();
-        using var deadline = new CancellationTokenSource(KohaOptions.Deadline, timeProvider);
 
         Response response;
         try
@@ -89,7 +89,7 @@ internal sealed partial class KohaAccessTokenProvider(
             {
                 BaseUrl = options.Value.ApiBaseAddress.AbsoluteUri,
             };
-            response = await client.TokenOAuthAsync(new Body { Grant_type = "client_credentials" }, deadline.Token);
+            response = await client.TokenOAuthAsync(new Body { Grant_type = "client_credentials" }, CancellationToken.None);
         }
         catch (KohaServiceException exception)
         {

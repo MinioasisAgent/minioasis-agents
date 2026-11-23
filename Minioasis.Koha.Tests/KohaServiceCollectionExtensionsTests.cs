@@ -29,13 +29,15 @@ public sealed class KohaServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void The_oauth_client_has_no_bearer_handler_and_follows_no_redirect()
+    public void The_oauth_client_applies_the_deadline_then_the_charset_correction_with_no_bearer_handler_and_no_redirect()
     {
         using var services = BuildServices();
 
         var chain = HandlerChain(services, KohaClientNames.OAuth);
 
-        Assert.Equal([typeof(KohaCharsetCorrectionHandler)], chain.Where(IsKohaHandler).Select(handler => handler.GetType()));
+        Assert.Equal(
+            [typeof(KohaDeadlineHandler), typeof(KohaCharsetCorrectionHandler)],
+            chain.Where(IsKohaHandler).Select(handler => handler.GetType()));
         var primary = Assert.IsType<SocketsHttpHandler>(chain[^1]);
         Assert.False(primary.AllowAutoRedirect);
     }

@@ -10,7 +10,8 @@ internal sealed class KohaOptions
     public const string ClientSecretSetting = "MINIOASIS_KOHA_CLIENT_SECRET";
 
     /// <summary>
-    /// The one deadline on all Koha work for one request (EX-011), and on one shared token request.
+    /// The one deadline on all Koha work for one request, and on one shared token request (EX-011). Only
+    /// <see cref="Handlers.KohaDeadlineHandler"/> applies it.
     /// </summary>
     public static readonly TimeSpan Deadline = TimeSpan.FromSeconds(10);
 

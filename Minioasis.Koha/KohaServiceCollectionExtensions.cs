@@ -46,6 +46,7 @@ public static class KohaServiceCollectionExtensions
                 client.DefaultRequestHeaders.Authorization = BasicCredentials(
                     provider.GetRequiredService<IOptions<KohaOptions>>().Value))
             .ConfigurePrimaryHttpMessageHandler(CreatePrimaryHandler)
+            .AddHttpMessageHandler<KohaDeadlineHandler>()
             .AddHttpMessageHandler<KohaCharsetCorrectionHandler>();
 
         services.AddHttpClient(KohaClientNames.Api)
