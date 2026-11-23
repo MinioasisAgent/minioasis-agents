@@ -1,5 +1,5 @@
 <!-- Access: Level 2 -->
-<!-- Last Updated: 2026-11-22 -->
+<!-- Last Updated: 2026-11-23 -->
 
 ## Level
 
@@ -22,7 +22,7 @@
 
 ## Review
 
-<!-- Every session started for this pull request: role, model, effort, duration, and token count, as the tool reports them. Give the reason for any effort that differs from the role's default, and for any second coder. Then the reviewer's answers to the four questions in short, and the rules it found broken, or "None". For a brief: what the reviewer challenged, and how it was settled. -->
+<!-- Every session started for this pull request: role, model, effort, duration, and token count, as the tool reports them. Give the reason for any effort that differs from the role's default, and for any second coder. Then the reviewer's answers to the three questions in short, and the rules it found broken, or "None". For a brief: what the reviewer challenged, and how it was settled. -->
 
 ## Not proven
 

@@ -23,12 +23,12 @@ return CreateFailure<RenewLoanResponse>(LoanErrorDefinitions.NotFound, metadata)
 
 ## ER-002 Define each error once, in its feature's error-definition group
 
-An error has exactly one definition: a stable code and a category, declared in the error-definition group of its feature, in Application. A registry collects every definition, so that the application can check them all when it starts (`ER-011`). Nothing defines an error at the place where it is used.
+An error has exactly one definition: a stable code and a category, declared in the error-definition group of its feature, in Application. An error of HTTP itself (`ER-004`) is declared in Api instead. A registry collects every definition, so that the application can check them all when it starts (`ER-011`). Nothing defines an error at the place where it is used.
 
 To add an error:
 
 1. Declare the definition, with its code and its category, in the feature's `<Feature>ErrorDefinitions` group.
-2. If the client can act on it (validation, not found, or method not allowed), add its message to the English resource file, under exactly the same code (`ER-011`).
+2. If the client can act on it (validation or not found), add its message to the English resource file, under exactly the same code (`ER-011`).
 3. If it is a server failure, add no message.
 4. Return the error by referring to the definition, and supply a value for every placeholder in its message.
 
@@ -79,11 +79,12 @@ The category decides the status, in one place in Api. A feature never chooses a 
 | --- | --- |
 | Validation: the request is invalid | 400 |
 | Not found | 404 |
-| Method not allowed: the route does not support the request method | 405 |
 | A dependency returned a response that cannot be used | 502 |
 | A dependency is unavailable | 503 |
 | Authentication to a dependency failed | 500 |
 | Unexpected failure | 500 |
+
+The table covers the errors that Application defines. Errors of HTTP itself, such as a path that matches no route (404) or a method that the route does not allow (405), are not Application categories, because Application knows nothing of HTTP (`AR-003`). Api defines each of them once, with its code and its status, in the same Problem Details shape (`ER-005`).
 
 ```csharp
 // BAD: an endpoint picks its own status
@@ -225,7 +226,7 @@ if (gatewayResult.HttpStatus == 404)
 
 ## ER-011 Keep client-visible messages in the resource file, and check them at startup
 
-The text shown to clients lives in one file, `Minioasis.Api/Resources/errors.en.json`, keyed by error code. Only English is supported today. The file contains exactly the client-visible definitions from the registry: no more and no fewer.
+The text shown to clients lives in one file, `Minioasis.Api/Resources/errors.en.json`, keyed by error code. Only English is supported today. The file contains exactly the client-visible definitions, those of Application's registry and Api's errors of HTTP itself (`ER-004`): no more and no fewer.
 
 The application checks this when it starts, and refuses to start on any inconsistency, so that a broken error definition or message fails before a request depends on it. Startup rejects:
 
