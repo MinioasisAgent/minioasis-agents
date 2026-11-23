@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 namespace Minioasis.Api.Shared.Errors;
 
 /// <summary>
-/// Builds every error response of the API (ER-005), decides its status from the category (ER-004), and masks
-/// every server failure (ER-006).
+/// Builds every error response of the API (ER-005), decides the status of an Application error from its category
+/// (ER-004), and masks every server failure (ER-006).
 /// </summary>
 internal sealed partial class ProblemResponseFactory(ErrorMessageCatalog messages)
 {
@@ -14,12 +14,13 @@ internal sealed partial class ProblemResponseFactory(ErrorMessageCatalog message
     public const string MaskedCode = "internal_error";
     public const string MaskedTitle = "Internal error";
 
+    private static readonly IReadOnlyDictionary<string, string> NoValues = new Dictionary<string, string>();
+
     /// <summary>The status of each category: the table of ER-004.</summary>
     public static int StatusFor(ApplicationErrorCategory category) => category switch
     {
         ApplicationErrorCategory.Validation => StatusCodes.Status400BadRequest,
         ApplicationErrorCategory.NotFound => StatusCodes.Status404NotFound,
-        ApplicationErrorCategory.MethodNotAllowed => StatusCodes.Status405MethodNotAllowed,
         ApplicationErrorCategory.DependencyInvalidResponse => StatusCodes.Status502BadGateway,
         ApplicationErrorCategory.DependencyUnavailable => StatusCodes.Status503ServiceUnavailable,
         ApplicationErrorCategory.DependencyAuthenticationFailed => StatusCodes.Status500InternalServerError,
@@ -49,6 +50,20 @@ internal sealed partial class ProblemResponseFactory(ErrorMessageCatalog message
             message.Title,
             FillPlaceholders(message.Detail, error.Metadata),
             error.Definition.Code,
+            TraceIdOf(context)));
+    }
+
+    /// <summary>The response for an error of HTTP itself: its own status, title, and detail.</summary>
+    public IResult Create(HttpErrorDefinition error, HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+
+        var message = messages.Get(error.Code);
+        return Write(new ProblemResponse(
+            error.Status,
+            message.Title,
+            FillPlaceholders(message.Detail, NoValues),
+            error.Code,
             TraceIdOf(context)));
     }
 

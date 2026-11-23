@@ -15,8 +15,6 @@ public sealed class ApplicationErrorRegistry(IReadOnlyList<ApplicationErrorDefin
     [
         ItemErrorDefinitions.InvalidIdentifier,
         ItemErrorDefinitions.NotFound,
-        RoutingErrorDefinitions.NotFound,
-        RoutingErrorDefinitions.MethodNotAllowed,
         KohaErrorDefinitions.AuthenticationFailed,
         KohaErrorDefinitions.InvalidResponse,
         KohaErrorDefinitions.Unavailable,

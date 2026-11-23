@@ -1,7 +1,8 @@
 namespace Minioasis.Application.Shared.Errors;
 
 /// <summary>
-/// The kind of an error. Api maps each category to one HTTP status (ER-004).
+/// The kind of an error. Api maps each category to one HTTP status (ER-004). Errors of HTTP itself, such as a path
+/// that matches no route, are not categories here: Api defines them (AR-003).
 /// </summary>
 public enum ApplicationErrorCategory
 {
@@ -10,9 +11,6 @@ public enum ApplicationErrorCategory
 
     /// <summary>The requested resource does not exist.</summary>
     NotFound,
-
-    /// <summary>The route does not support the request method.</summary>
-    MethodNotAllowed,
 
     /// <summary>A dependency returned a response that cannot be used.</summary>
     DependencyInvalidResponse,

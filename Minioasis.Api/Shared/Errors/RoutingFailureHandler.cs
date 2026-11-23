@@ -1,5 +1,3 @@
-using Minioasis.Application.Shared.Errors;
-
 namespace Minioasis.Api.Shared.Errors;
 
 /// <summary>
@@ -8,20 +6,12 @@ namespace Minioasis.Api.Shared.Errors;
 /// </summary>
 internal sealed class RoutingFailureHandler(ProblemResponseFactory problems)
 {
-    private static readonly IReadOnlyDictionary<string, string> NoMetadata = new Dictionary<string, string>();
-
     public async Task HandleAsync(HttpContext context)
     {
-        var definition = context.Response.StatusCode switch
-        {
-            StatusCodes.Status404NotFound => RoutingErrorDefinitions.NotFound,
-            StatusCodes.Status405MethodNotAllowed => RoutingErrorDefinitions.MethodNotAllowed,
-            _ => null,
-        };
+        var error = HttpErrorDefinitions.All.FirstOrDefault(error => error.Status == context.Response.StatusCode);
 
-        if (definition is not null)
+        if (error is not null)
         {
-            var error = new ApplicationError(definition, Operation: "routing", NoMetadata);
             await problems.Create(error, context).ExecuteAsync(context);
         }
     }

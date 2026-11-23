@@ -10,6 +10,7 @@ internal static class ApiErrorContractExtensions
     {
         services.AddSingleton(provider => ErrorMessageCatalog.Load(
             provider.GetRequiredService<ApplicationErrorRegistry>(),
+            HttpErrorDefinitions.All,
             ErrorMessageCatalog.ReadEmbeddedMessages()));
         services.AddSingleton<ProblemResponseFactory>();
         services.AddSingleton<ApplicationResultHttpMapper>();
@@ -19,7 +20,7 @@ internal static class ApiErrorContractExtensions
     }
 
     /// <summary>
-    /// Checks the error registry against the message file, so that the application refuses to start on an
+    /// Checks the error registry and Api's errors of HTTP itself against the message file, so that the application refuses to start on an
     /// inconsistency (ER-011), then adds the exception handler and the shape for routing failures.
     /// </summary>
     public static WebApplication UseApiErrorContract(this WebApplication app)

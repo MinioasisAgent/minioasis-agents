@@ -9,7 +9,5 @@ public sealed record ApplicationErrorDefinition(string Code, ApplicationErrorCat
     /// True when the client can act on the error, so that it has a public code and a message (ER-003).
     /// Every other error is a server failure and is masked (ER-006).
     /// </summary>
-    public bool IsClientVisible => Category is ApplicationErrorCategory.Validation
-        or ApplicationErrorCategory.NotFound
-        or ApplicationErrorCategory.MethodNotAllowed;
+    public bool IsClientVisible => Category is ApplicationErrorCategory.Validation or ApplicationErrorCategory.NotFound;
 }

@@ -31,8 +31,6 @@ public sealed class ApplicationErrorRegistryTests
         {
             ["items.invalid_identifier"] = ApplicationErrorCategory.Validation,
             ["items.not_found"] = ApplicationErrorCategory.NotFound,
-            ["not_found"] = ApplicationErrorCategory.NotFound,
-            ["method_not_allowed"] = ApplicationErrorCategory.MethodNotAllowed,
             ["koha.authentication_failed"] = ApplicationErrorCategory.DependencyAuthenticationFailed,
             ["koha.invalid_response"] = ApplicationErrorCategory.DependencyInvalidResponse,
             ["koha.unavailable"] = ApplicationErrorCategory.DependencyUnavailable,
@@ -49,7 +47,6 @@ public sealed class ApplicationErrorRegistryTests
     [Theory]
     [InlineData(ApplicationErrorCategory.Validation, true)]
     [InlineData(ApplicationErrorCategory.NotFound, true)]
-    [InlineData(ApplicationErrorCategory.MethodNotAllowed, true)]
     [InlineData(ApplicationErrorCategory.DependencyInvalidResponse, false)]
     [InlineData(ApplicationErrorCategory.DependencyUnavailable, false)]
     [InlineData(ApplicationErrorCategory.DependencyAuthenticationFailed, false)]
@@ -57,5 +54,20 @@ public sealed class ApplicationErrorRegistryTests
     public void Only_errors_the_client_can_act_on_are_client_visible(ApplicationErrorCategory category, bool visible)
     {
         Assert.Equal(visible, new ApplicationErrorDefinition("x", category).IsClientVisible);
+    }
+
+    [Fact]
+    public void The_categories_are_those_of_er_004_and_none_belongs_to_http_itself()
+    {
+        Assert.Equal(
+            [
+                nameof(ApplicationErrorCategory.Validation),
+                nameof(ApplicationErrorCategory.NotFound),
+                nameof(ApplicationErrorCategory.DependencyInvalidResponse),
+                nameof(ApplicationErrorCategory.DependencyUnavailable),
+                nameof(ApplicationErrorCategory.DependencyAuthenticationFailed),
+                nameof(ApplicationErrorCategory.Unexpected),
+            ],
+            Enum.GetNames<ApplicationErrorCategory>());
     }
 }

@@ -9,7 +9,6 @@ public sealed class ProblemResponseFactoryTests
     [Theory]
     [InlineData(ApplicationErrorCategory.Validation, 400)]
     [InlineData(ApplicationErrorCategory.NotFound, 404)]
-    [InlineData(ApplicationErrorCategory.MethodNotAllowed, 405)]
     [InlineData(ApplicationErrorCategory.DependencyInvalidResponse, 502)]
     [InlineData(ApplicationErrorCategory.DependencyUnavailable, 503)]
     [InlineData(ApplicationErrorCategory.DependencyAuthenticationFailed, 500)]

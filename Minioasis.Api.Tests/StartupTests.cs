@@ -56,4 +56,22 @@ public sealed class StartupTests
 
         Assert.Contains("things.not_found", exception.ToString(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Refuses_to_start_when_application_defines_a_code_that_api_defines_as_an_error_of_http()
+    {
+        await using var factory = new ApiTestHostFactory(services =>
+        {
+            services.RemoveAll<ApplicationErrorRegistry>();
+            services.AddSingleton(new ApplicationErrorRegistry(
+            [
+                .. ApplicationErrorRegistry.Default.Definitions,
+                new ApplicationErrorDefinition("method_not_allowed", ApplicationErrorCategory.Validation),
+            ]));
+        });
+
+        var exception = Assert.ThrowsAny<Exception>(() => factory.Server);
+
+        Assert.Contains("method_not_allowed", exception.ToString(), StringComparison.Ordinal);
+    }
 }

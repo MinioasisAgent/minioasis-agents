@@ -4,8 +4,9 @@ using System.Text.Json;
 namespace Minioasis.Api.Shared.Errors;
 
 /// <summary>
-/// The messages of <c>Resources/errors.en.json</c>, checked against the error registry when the application
-/// starts (ER-011). It holds exactly one message for each client-visible definition, and no other.
+/// The messages of <c>Resources/errors.en.json</c>, checked against the error registry and Api's errors of HTTP
+/// itself when the application starts (ER-011). It holds exactly one message for each client-visible definition of
+/// either, and no other.
 /// </summary>
 internal sealed class ErrorMessageCatalog
 {
@@ -19,22 +20,28 @@ internal sealed class ErrorMessageCatalog
     }
 
     /// <summary>
-    /// Reads the messages and checks them against the registry.
+    /// Reads the messages and checks them against the registry and the errors of HTTP itself.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The registry or the messages are inconsistent.</exception>
-    public static ErrorMessageCatalog Load(ApplicationErrorRegistry registry, string json)
+    /// <exception cref="InvalidOperationException">The definitions or the messages are inconsistent.</exception>
+    public static ErrorMessageCatalog Load(
+        ApplicationErrorRegistry registry,
+        IReadOnlyList<HttpErrorDefinition?> httpErrors,
+        string json)
     {
         ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(httpErrors);
 
         var problems = new List<string>();
-        var definitions = CheckRegistry(registry, problems);
+        var clientVisibleByCode = new Dictionary<string, bool>(StringComparer.Ordinal);
+        CheckRegistry(registry, clientVisibleByCode, problems);
+        CheckHttpErrors(httpErrors, clientVisibleByCode, problems);
         var messages = ReadMessages(json, problems);
-        CheckCoverage(definitions, messages, problems);
+        CheckCoverage(clientVisibleByCode, messages, problems);
 
         if (problems.Count > 0)
         {
             throw new InvalidOperationException(
-                "The error registry and Resources/errors.en.json are inconsistent: " + string.Join(" ", problems));
+                "The error definitions and Resources/errors.en.json are inconsistent: " + string.Join(" ", problems));
         }
 
         return new ErrorMessageCatalog(messages);
@@ -55,11 +62,11 @@ internal sealed class ErrorMessageCatalog
             ? message
             : throw new InvalidOperationException($"No message exists for the error code {code}.");
 
-    private static Dictionary<string, ApplicationErrorDefinition> CheckRegistry(
+    private static void CheckRegistry(
         ApplicationErrorRegistry registry,
+        Dictionary<string, bool> clientVisibleByCode,
         List<string> problems)
     {
-        var definitions = new Dictionary<string, ApplicationErrorDefinition>(StringComparer.Ordinal);
         if (registry.Definitions.Count == 0)
         {
             problems.Add("The registry is empty.");
@@ -79,13 +86,41 @@ internal sealed class ErrorMessageCatalog
             {
                 problems.Add($"The definition {definition.Code} has an invalid category.");
             }
-            else if (!definitions.TryAdd(definition.Code, definition))
+            else if (!clientVisibleByCode.TryAdd(definition.Code, definition.IsClientVisible))
             {
                 problems.Add($"The code {definition.Code} is defined more than once.");
             }
         }
+    }
 
-        return definitions;
+    /// <summary>
+    /// Every error of HTTP itself is client-visible, so its status must be a client error (4xx); a server failure is
+    /// masked instead (ER-006). Its code must not repeat a code of the registry.
+    /// </summary>
+    private static void CheckHttpErrors(
+        IReadOnlyList<HttpErrorDefinition?> httpErrors,
+        Dictionary<string, bool> clientVisibleByCode,
+        List<string> problems)
+    {
+        foreach (var error in httpErrors)
+        {
+            if (error is null)
+            {
+                problems.Add("The errors of HTTP itself hold a null definition.");
+            }
+            else if (string.IsNullOrWhiteSpace(error.Code))
+            {
+                problems.Add("The errors of HTTP itself hold a definition with a blank code.");
+            }
+            else if (error.Status is < StatusCodes.Status400BadRequest or > 499)
+            {
+                problems.Add($"The error of HTTP itself {error.Code} has the status {error.Status}, which is not a client error.");
+            }
+            else if (!clientVisibleByCode.TryAdd(error.Code, true))
+            {
+                problems.Add($"The code {error.Code} is defined more than once.");
+            }
+        }
     }
 
     private static Dictionary<string, ErrorMessage> ReadMessages(string json, List<string> problems)
@@ -155,25 +190,25 @@ internal sealed class ErrorMessageCatalog
             : null;
 
     private static void CheckCoverage(
-        Dictionary<string, ApplicationErrorDefinition> definitions,
+        Dictionary<string, bool> clientVisibleByCode,
         Dictionary<string, ErrorMessage> messages,
         List<string> problems)
     {
-        foreach (var definition in definitions.Values.Where(definition => definition.IsClientVisible))
+        foreach (var code in clientVisibleByCode.Where(pair => pair.Value).Select(pair => pair.Key))
         {
-            if (!messages.ContainsKey(definition.Code))
+            if (!messages.ContainsKey(code))
             {
-                problems.Add($"The client-visible error {definition.Code} has no message.");
+                problems.Add($"The client-visible error {code} has no message.");
             }
         }
 
         foreach (var code in messages.Keys)
         {
-            if (!definitions.TryGetValue(code, out var definition))
+            if (!clientVisibleByCode.TryGetValue(code, out var clientVisible))
             {
-                problems.Add($"The message {code} belongs to no registered definition.");
+                problems.Add($"The message {code} belongs to no defined error.");
             }
-            else if (!definition.IsClientVisible)
+            else if (!clientVisible)
             {
                 problems.Add($"The message {code} belongs to a server failure, which is never shown to a client.");
             }
