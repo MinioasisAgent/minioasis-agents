@@ -1,0 +1,7 @@
+# Access: Level 1
+# Last Updated: 2026-11-20
+
+# Store and check out every text file with LF line endings, on every system.
+# This matches end_of_line = lf in .editorconfig, so that dotnet format gives
+# the same result on Windows as in CI.
+* text=auto eol=lf
