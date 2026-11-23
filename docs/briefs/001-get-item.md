@@ -1,9 +1,9 @@
-- **Access:** Level 1
+- **Access:** Level 2
 - **Last Updated:** 2026-11-23
 
 # 001 — Get item
 
-- **Status:** draft
+- **Status:** approved
 - **Changes data in Koha:** no
 - **Verification:** not required
 - **Related:** none

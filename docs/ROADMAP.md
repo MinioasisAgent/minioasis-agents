@@ -12,7 +12,7 @@ The order below is a proposal. The maintainer decides it.
 | # | Work | Status | Why / notes |
 | --- | --- | --- | --- |
 | — | Foundation | done | Not a capability, so it has no brief. The solution, and the three projects with their test projects, as `AR-001` and `TS-004` describe, with xUnit v3 as the test framework. It added dependencies, so it was a Level 2 change. It added no behavior. |
-| 001 | Get item (`docs/briefs/001-get-item.md`) | draft | Look up one Koha item by its item number. On 2026-11-23 the maintainer put the two shared parts into this brief: the API error contract (`ER-004` to `ER-007`, `ER-011`) and the Koha connection (`EX-004` to `EX-013`). |
+| 001 | Get item (`docs/briefs/001-get-item.md`) | approved | Look up one Koha item by its item number. On 2026-11-23 the maintainer put the two shared parts into this brief: the API error contract (`ER-004` to `ER-007`, `ER-011`) and the Koha connection (`EX-004` to `EX-013`). |
 | 002 | Staff access control | proposed | The API validates the Cloudflare Access token that the user interface forwards, and listens on localhost only. The maintainer's design, 2026-11-23. Until it is built, the API is open to anyone who can reach it. |
 | 003 | The first staff capability | to be decided | The maintainer chooses it. |
 

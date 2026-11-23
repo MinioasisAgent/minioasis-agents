@@ -9,7 +9,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Brief 001, get item (`docs/briefs/001-get-item.md`), is a draft that waits for the maintainer's acceptance. It also covers the Koha connection and the API error contract.
+- Brief 001, get item (`docs/briefs/001-get-item.md`), was approved on 2026-11-23 (pull request 2) and is being built. It also covers the Koha connection and the API error contract.
 
 ## What exists
 
@@ -19,7 +19,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Next
 
-- Build brief 001 once it is approved. Then brief 002, staff access control (`docs/ROADMAP.md`).
+- Brief 002, staff access control (`docs/ROADMAP.md`).
 
 ## Recent decisions
 
