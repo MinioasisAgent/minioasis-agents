@@ -5,7 +5,6 @@
 
 - **Status:** draft
 - **Changes data in Koha:** no
-- **Verification:** not required
 - **Related:** none
 
 This brief also builds the two things every later capability shares: the connection to Koha (token, retry, deadline) and the API error contract. The maintainer chose to put the three in one brief (part 4). Later briefs refer to this one for both.
@@ -101,7 +100,7 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 | The three Koha failure codes are generic (`koha.*`), not one set per capability. | The cause belongs to the connection, not to the capability, and one set is reused everywhere. |
 | The Koha client identifier may be logged. | It is an identifier, not a secret, and it helps find a wrong setting. |
 | The test Koha check creates its own record and item, and deletes them. | `TS-013`. |
-| Verification is not required, although the capability handles credentials (`docs/process.md`, section 8). | Nothing changes data in Koha; the tokens are easy to rotate. |
+| The capability is verified after its review, as every capability is (`docs/process.md`, section 8). | The maintainer's rule of 2026-11-23: verification is cheap, so it always runs. |
 | The route ships open until brief 002 is built. | "Let's not focus on this first." |
 
 **Made by the agent**

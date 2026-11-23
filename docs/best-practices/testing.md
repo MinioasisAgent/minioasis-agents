@@ -16,7 +16,7 @@ BAD    Write the code, then a test, see it pass, and move on.
 GOOD   Write the test. Run it: it fails because the behavior is missing. Write the code. Run it: it passes.
 ```
 
-**Checked by:** review, and independent verification where the brief requires it (`docs/process.md`, section 8)
+**Checked by:** review, and independent verification (`docs/process.md`, section 8)
 
 ---
 
@@ -115,7 +115,7 @@ BAD    Every Api test replaces the use case. The endpoint could ignore the route
        use case could be missing from dependency injection, and every test would still pass.
 ```
 
-**Checked by:** review, and independent verification where the brief requires it ("wired")
+**Checked by:** review, and independent verification ("wired")
 
 ---
 
@@ -140,7 +140,7 @@ One example proves one example. A change that breaks every other member of the c
 
 The same applies to words such as "not a whole number" (test letters, a decimal, a thousands separator, an exponent) and "not a GET" (test several other methods).
 
-**Checked by:** review, and independent verification where the brief requires it
+**Checked by:** review, and independent verification
 
 ---
 
@@ -252,7 +252,7 @@ GOOD   The successful case, each kind of invalid input, "not found", each depend
        the brief names, and cancellation
 ```
 
-**Checked by:** review, and independent verification where the brief requires it
+**Checked by:** review, and independent verification
 
 ---
 

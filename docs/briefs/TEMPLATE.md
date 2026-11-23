@@ -1,11 +1,10 @@
 - **Access:** Level 1 <!-- For the copy: Level 2 once approved (`docs/process.md`, section 3). This template itself is Level 2. -->
-- **Last Updated:** <date> <!-- Template last updated: 2026-11-22 -->
+- **Last Updated:** <date> <!-- Template last updated: 2026-11-23 -->
 
 # <NNN> — <Capability name>
 
 - **Status:** draft <!-- draft, approved, built, transferred, or rejected -->
-- **Changes data in Koha:** yes | no <!-- yes: part 8 and verification are required -->
-- **Verification:** required | not required <!-- Required when the capability changes data in Koha. Otherwise "not required", unless the risk justifies it. Then give the reason. -->
+- **Changes data in Koha:** yes | no <!-- yes: part 8 is required -->
 - **Related:** <other briefs, issues>
 
 ## 1. Goal
