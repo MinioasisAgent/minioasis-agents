@@ -28,7 +28,7 @@ An error has exactly one definition: a stable code and a category, declared in t
 To add an error:
 
 1. Declare the definition, with its code and its category, in the feature's `<Feature>ErrorDefinitions` group.
-2. If the client can act on it (validation or not found), add its message to the English resource file, under exactly the same code (`ER-011`).
+2. If the client can act on it (validation, not found, or method not allowed), add its message to the English resource file, under exactly the same code (`ER-011`).
 3. If it is a server failure, add no message.
 4. Return the error by referring to the definition, and supply a value for every placeholder in its message.
 

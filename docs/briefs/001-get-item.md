@@ -29,7 +29,8 @@ A staff client can ask Minioasis for one Koha item by its Koha item number and g
 | GET | `/api/v1/items/{id}` | 200, `application/json` | `id`: the Koha item number, as a path segment | `id` (string), `bibliographicRecordId` (string), `barcode` (string or null), `callNumber` (string or null) |
 
 - `id` is Koha's `item_id` and `bibliographicRecordId` is Koha's `biblio_id`, each written as a decimal string without leading zeros. `barcode` is Koha's `external_id`. `callNumber` is Koha's `callnumber`.
-- A valid `id` is, after leading and trailing spaces are removed, one or more ASCII digits whose value is from 1 to 2147483647. Leading zeros are accepted (`007` is 7). A sign, a decimal point, or any other character makes it invalid.
+- A valid `id` is, after leading and trailing whitespace is removed (every character that .NET's `string.Trim()` removes), one or more ASCII digits whose value is from 1 to 2147483647. Leading zeros are accepted (`007` is 7). A sign, a decimal point, or any other character makes it invalid.
+- `GET /api/v1/items/` has no `id` segment, so it matches no route and returns 404 `not_found`. An `id` of only whitespace, such as `%20`, does match the route and returns 400.
 
 Every error is Problem Details (`ER-005`): content type `application/problem+json`, with `status`, `title`, `detail` (except where masked), `code`, and `traceId`, and without `type` and `instance`. `traceId` is an opaque string.
 
@@ -38,7 +39,7 @@ Every error is Problem Details (`ER-005`): content type `application/problem+jso
 | Invalid `id` | 400 | `items.invalid_identifier` | "Invalid item identifier" / "The item identifier must be a valid positive identifier." |
 | Koha has no such item | 404 | `items.not_found` | "Item not found" / "No item was found with identifier {id}." `{id}` is the number without leading zeros. |
 | No route matches the path | 404 | `not_found` | "Not found" / "The requested resource does not exist." |
-| The route exists, but not for this method | 405 | `method_not_allowed` | "Method not allowed" / "This resource does not support the request method." |
+| The route exists, but not for this method | 405 | `method_not_allowed` | "Method not allowed" / "This resource does not support the request method." The `Allow` header that the framework sets is kept (RFC 9110, section 15.5.6). |
 | Minioasis cannot authenticate to Koha | 500 | `internal_error` | "Internal error", no detail |
 | Koha's answer cannot be used | 502 | `internal_error` | "Internal error", no detail |
 | Koha is unavailable | 503 | `internal_error` | "Internal error", no detail |
@@ -51,16 +52,16 @@ Every error is Problem Details (`ER-005`): content type `application/problem+jso
 | Koha's answer | Outcome | Status |
 | --- | --- | --- |
 | 200 with `item_id` and `biblio_id` both positive | Found | 200 |
-| 404 | Not found | 404 |
+| 404 whose JSON body has `error_code` equal to `not_found` | Not found | 404 |
 | A token cannot be obtained, for any reason of `EX-013`; 401 again after the one retry; 403 | Authentication failed | 500 |
 | 429; any 5xx; a connection failure; a response that is cut off; the deadline expires while the item is requested | Unavailable | 503 |
-| Any other status; a 200 whose body cannot be read; a 200 without a positive `item_id` and `biblio_id` | Invalid response | 502 |
+| Any other status, including a 404 without that `error_code`; a 200 whose body cannot be read; a 200 without a positive `item_id` and `biblio_id` | Invalid response | 502 |
 
 **Configuration** (`EX-005`), read through ASP.NET configuration:
 
 | Name | Value |
 | --- | --- |
-| `MINIOASIS_KOHA_BASE_URL` | The address of Koha: an absolute `http` or `https` URL without a path, query, or fragment, for example `https://koha.example.org`. A trailing `/` is accepted. Minioasis adds `/api/v1` itself. |
+| `MINIOASIS_KOHA_BASE_URL` | The address of Koha: an absolute `https` URL without a path, query, or fragment, for example `https://koha.example.org`. `http` is accepted only when the host is `localhost`, `127.0.0.1`, or `[::1]`. A trailing `/` is accepted. Minioasis adds `/api/v1` itself. |
 | `MINIOASIS_KOHA_CLIENT_ID` | The client identifier of the Koha service account. |
 | `MINIOASIS_KOHA_CLIENT_SECRET` | Its secret. |
 
@@ -75,10 +76,10 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 
 **Security**
 
-- **Who may call it: anyone who can reach the API.** Staff sign-in does not exist yet. The maintainer's design is that the API listens on localhost only and validates the Cloudflare Access token that the user interface forwards; that is the next brief (part 5).
+- **Who may call it: anyone who can reach the API.** Staff sign-in does not exist yet, and this brief sets no listening address. The maintainer's design is that the API listens on localhost only and validates the Cloudflare Access token that the user interface forwards; that is the next brief (part 5).
 - The Koha service account needs the `catalogue` permission and no other (`EX-005`).
 - No patron data is read, returned, or logged.
-- The log may hold the trace identifier, internal error codes, HTTP status codes, the `error` word of a Koha token response (for example `access_denied`), and the Koha client identifier. It never holds the client secret, an access token, or an `Authorization` header (`ER-008`).
+- The log may hold the trace identifier, internal error codes, HTTP status codes, the `error` word of a Koha token response (`access_denied` for a wrong secret and `unauthorized_client` for an unknown client identifier, on the test Koha, 26.05), and the Koha client identifier. It never holds the client secret, an access token, or an `Authorization` header (`ER-008`).
 
 ## 4. Decisions
 
@@ -86,7 +87,7 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 
 | Decision | Reason |
 | --- | --- |
-| One brief covers the Koha connection, the API error contract, and get item. | One approval and one build; get item gives the other two a real caller. |
+| One brief covers the Koha connection, the API error contract, and get item. This is an intended exception to `docs/process.md`, section 3, rule 4. | One approval and one build; get item gives the other two a real caller. |
 | Look up by Koha item number only. | The smallest slice that proves the whole path. Barcode lookup is a later route. |
 | The response is the four fields of part 3, with identifiers as strings; the two `items.*` codes and their text. | Kept from the first attempt; nothing was found wrong with them. |
 | The first token is requested on the first Koha call, not at startup. | The application still starts when Koha is down. |
@@ -95,22 +96,25 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 | Production reaches Koha directly. The application sends no Cloudflare Access headers. | The maintainer's deployment. |
 | The deadline for all Koha work on one request is 10 seconds. | "10s looks sufficient." |
 | Server failures are masked as `ER-006` says. A 403 from Koha is an authentication failure. | The service account lacks a permission; staff cannot fix it. |
-| An unknown route and a wrong method answer in the same Problem Details shape. | Clients parse one shape everywhere. |
+| An unknown route and a wrong method answer in the same Problem Details shape, with the codes `not_found` and `method_not_allowed`. | Clients parse one shape everywhere. |
 | The Koha client identifier may be logged. | It is an identifier, not a secret, and it helps find a wrong setting. |
 | The test Koha check creates its own record and item, and deletes them. | `TS-013`. |
-| Verification is not required. | Nothing changes data in Koha; the tokens are easy to rotate. |
+| Verification is not required, although the capability handles credentials (`docs/process.md`, section 8). | Nothing changes data in Koha; the tokens are easy to rotate. |
+| The route ships open until brief 002 is built. | "Let's not focus on this first." |
 
 **Made by the agent**
 
 | Decision | Alternative rejected | Reason and evidence |
 | --- | --- | --- |
-| The client identifier and secret go to the token endpoint in the HTTP Basic header. The form body holds only `grant_type=client_credentials`. | Both in the form body. | RFC 6749, section 2.3.1, prefers Basic. Test Koha, 26.05, 2026-11-23: Basic alone returned 200 with `token_type` Bearer and `expires_in` 3600; Basic wins over a wrong secret in the body. The contract marks `client_id` and `client_secret` optional, so the generated client can leave them out; the Basic header is set on the token HTTP client (`EX-001`, `EX-007`). |
+| The client identifier and secret go to the token endpoint in the HTTP Basic header. The form body holds only `grant_type=client_credentials`. | Both in the form body. | RFC 6749, section 2.3.1, prefers Basic. Test Koha, 26.05, 2026-11-23: Basic alone returned 200 with `token_type` Bearer and `expires_in` 3600; Basic wins over a wrong secret in the body. The contract marks `client_id` and `client_secret` optional. The client that NSwag 14.7.1 generates sends them as empty fields unless its serializer ignores null values, so part 7 says how the code leaves them out (`EX-001`). The Basic header is set on the token HTTP client (`EX-007`). |
 | A token is reused while more than 60 seconds of its lifetime remain. | No margin. | A token that expires in flight costs a 401 and a retry. With Koha's 3600 seconds, 60 costs nothing. Two-way. |
 | A token request is never retried. | One retry. | `EX-010`: only a GET is retried. The next request tries again anyway. |
 | A wrong secret is an authentication failure, like every other token failure. | A separate "wrong credentials" outcome. | `EX-013`. Test Koha, 26.05: a wrong secret returns 403 `{"error":"access_denied"}`. The log shows the status and that word. |
 | An invalid `id` is rejected by Minioasis before Koha is called, and `0` is invalid. | Pass every value to Koha. | Test Koha, 26.05: `abc` returns 400 with an `errors` array, and `0` and `-1` return 404. Koha's two answers would give staff two different errors for input that is plainly wrong. |
-| Koha's 404 means "not found". | Read the body's `error_code`. | Test Koha, 26.05: a missing item returns 404 `{"error":"Item not found","error_code":"not_found"}`. With a validated number and a fixed path, no other 404 was seen. |
-| `MINIOASIS_KOHA_BASE_URL` accepts `http` as well as `https`. | `https` only. | The maintainer's production reaches Koha directly, which may be plain HTTP on the same machine or a private network. Over `http` the secret and token travel unencrypted, so `http` is safe only there. See "Least sure of". |
+| Koha's 404 means "not found" only when its body has `error_code` `not_found`. | Treat every 404 as "not found". | Test Koha, 26.05: a missing item returns 404 `{"error":"Item not found","error_code":"not_found"}`, and a path that Koha does not know returns an HTML 404 without it. A wrong base URL must not tell staff that an item does not exist. |
+| Whitespace around the number and leading zeros are accepted. | Reject them. | They are harmless, and the meaning is clear. Koha is always sent the plain number. |
+| The text of `not_found` and `method_not_allowed` in part 3. | None. | The maintainer chose the codes; the wording is the agent's, for the maintainer to accept with this brief (`ER-003`). |
+| `MINIOASIS_KOHA_BASE_URL` must be `https`, except for a loopback host. | Any `http` address; or `https` only. | RFC 6749, sections 2.3.1 and 3.2, and RFC 6750, section 5.3, require TLS wherever the secret or the token travels. Traffic to the same machine never leaves it, so `http` there exposes nothing, and Koha on the same machine is often plain HTTP. |
 | A new error category, "method not allowed", with status 405, is added to the table of `ER-004`. | Leave the framework's empty 405; or answer a wrong method with 404. | `ER-011` allows a client-visible message only for a registered definition, and every definition needs a category. An empty 405 breaks the maintainer's "one shape" decision; a 404 would misreport the cause. This pull request makes that one-row edit to `docs/best-practices/errors.md`. |
 
 **Needs your decision**
@@ -119,9 +123,9 @@ None.
 
 **Least sure of**
 
-- **Allowing `http` for the base URL.** If production Koha is in fact reached over HTTPS, `https` only is safer, and the setting should refuse `http`.
+- **The base URL rule.** If production Minioasis reaches Koha over plain HTTP on another machine of a private network, the application will refuse to start, and this decision must change before transfer.
 - **The 405 category.** It is the only edit to a rule file. If the maintainer prefers no rule change, the alternative is to drop the 405 row and leave the framework's answer.
-- **Basic through the generated client.** The first thing to check if sign-in fails: that the generated token request really leaves `client_id` and `client_secret` out of the body.
+- **"Method not allowed" as an Application category.** It is an HTTP idea among business categories. It is there only because `ER-011` ties every client-visible message to a registered definition.
 
 ## 5. Not included
 
@@ -140,9 +144,9 @@ None.
 1. An existing item returns 200 with `id`, `bibliographicRecordId`, `barcode`, and `callNumber` as part 3 defines them. `[K]`
 2. An item without a barcode or a call number returns 200 with `null` for the missing field.
 3. An `id` with spaces around a valid number, or with leading zeros, is accepted.
-4. Each invalid `id` returns 400 `items.invalid_identifier`, and Koha is not called: blank, only spaces, `abc`, `1.5`, `+5`, `-1`, `0`, `2147483648`.
+4. Each invalid `id` returns 400 `items.invalid_identifier`, and Koha is not called: only spaces (`%20`), `abc`, `1.5`, `+5`, `-1`, `0`, `2147483648`. The use case also rejects an empty string, which no HTTP request can send.
 5. A number that Koha does not have returns 404 `items.not_found`, and the detail holds the number. `[K]`
-6. Each Koha answer in the translation table of part 3 gives the outcome and status in its row. The test names: 401 twice, 403, 429, 500, 503, a connection failure, a cut-off response, 400, 418, an unreadable body, `item_id` 0, `biblio_id` missing.
+6. Each Koha answer in the translation table of part 3 gives the outcome and status in its row. The test names: 401 twice, 403, 429, 500, 502, 503, 504, 599, a connection failure, a cut-off response, 204, 400, 409, 418, a 404 with an HTML body, an unreadable body, `item_id` 0, `biblio_id` missing.
 7. The item is read correctly when the server's culture is not English.
 
 **Koha connection**
@@ -150,14 +154,14 @@ None.
 8. The token request sends `grant_type=client_credentials` in the form body, the identifier and secret in the Basic header, and neither in the body. `[K]`
 9. A token response is rejected unless the token is not blank, `expires_in` is positive, and `token_type` is `Bearer` in any letter case.
 10. A token is reused until 60 seconds before it expires, and a new one is requested after that.
-11. Callers that need a token at the same moment share one token request.
+11. Callers that need a token at the same moment share one token request. When one of them cancels, the others still get the token.
 12. Each failure to get a token is an authentication failure: status 403 with `access_denied` `[K]`, status 500, a connection failure, a timeout, an unreadable body, a response that behavior 9 rejects.
 13. The token request does not pass through the handler that attaches tokens, and it is never retried.
 14. After a 401 on a GET, the cached token is discarded, a new one is requested, and the request is sent once more. A second 401 is returned. `[K]`
 15. A request other than GET is never sent again after a 401.
 16. Token request, item request, retry, and reading the body together take at most 10 seconds. When the deadline expires, the result is a dependency failure, not a cancellation.
 17. When the caller cancels, the work stops, no failure is returned or logged, and no error response is written.
-18. The application refuses to start, naming the setting and no value, for each of: a missing or blank setting (each of the three), a base URL that is relative, has another scheme, or has a path, query, or fragment.
+18. The application refuses to start, naming the setting and no value, for each of: a missing or blank setting (each of the three), a base URL that is relative, has a scheme other than `http` and `https`, is `http` with a host that is not loopback, or has a path, query, or fragment. It starts with `https://koha.example.org`, `https://koha.example.org/`, and `http://localhost:8081`.
 
 **Error contract**
 
@@ -165,7 +169,7 @@ None.
 20. Each category gives its status: validation 400, not found 404, method not allowed 405, unusable dependency response 502, dependency unavailable 503, dependency authentication 500, unexpected 500.
 21. A 500, 502, or 503 has the title "Internal error", the code `internal_error`, and no `detail`, the same in Development and in Production, for a returned failure and for an unhandled exception.
 22. For each server failure, the log holds the internal error code or the exception, with the `traceId` that the response carries.
-23. An unknown path returns 404 `not_found`, and `POST /api/v1/items/1` returns 405 `method_not_allowed`, both in the shape of behavior 19.
+23. An unknown path and `GET /api/v1/items/` return 404 `not_found`. `POST /api/v1/items/1` returns 405 `method_not_allowed` with the header `Allow: GET`. All are in the shape of behavior 19.
 24. The application refuses to start on each inconsistency that `ER-011` lists between the error registry and `errors.en.json`.
 25. No log line and no response holds the client secret, an access token, or an `Authorization` header, on the success path and on each failure path of behaviors 12 and 6.
 
@@ -178,12 +182,11 @@ Three layers, as `docs/best-practices/architecture.md` describes. Application ho
 | `Minioasis.Application` | `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.0.15 | Its registration method (`AR-005`). |
 | `Minioasis.Koha` | `Microsoft.AspNetCore.App` (framework reference, not a package) | .NET 10 | `IHttpClientFactory`, options, configuration, and logging, without separate packages. |
 | `Minioasis.Api.Tests` | `Microsoft.AspNetCore.Mvc.Testing` | 10.0.15 | Runs the API in memory for the endpoint and error tests. |
-| `Minioasis.Koha.Tests` | `Microsoft.AspNetCore.App` (framework reference) | .NET 10 | Builds the same service registration that the application uses. |
 
-Each production project lets its own test project see its internal types.
+Each production project lets its own test project see its internal types. The code reads the time from .NET's built-in `TimeProvider`, and the tests replace it with a handwritten fake (`TS-007`); no package is needed. The definitions `not_found`, `method_not_allowed`, and `system.unexpected` belong to no feature, so they sit in one shared group in Application.
 
-- **Contracts:** `contracts/oauth.openapi.json` and `contracts/items.openapi.json`, each copied faithfully from the official contract (`EX-002`). The clients are generated by NSwag into `Minioasis.Koha/Generated/OAuth` and `Minioasis.Koha/Generated/Items` (`EX-003`). The build writes the exact command into `docs/running.md`.
-- **Test Koha checks:** in `Minioasis.Koha.Tests`, marked so that they can be run alone, and skipped when the five `MINIOASIS_TEST_KOHA_*` variables are absent. They add the two Cloudflare Access headers through a test-only handler; the application's code does not know about them. `MINIOASIS_TEST_KOHA_BASE_URL` has the format of `MINIOASIS_KOHA_BASE_URL`. The check for behaviors 1 and 5 creates a bibliographic record and an item (`POST /biblios`, `POST /biblios/{biblio_id}/items`), reads the item through the adapter, and deletes both. The test Koha's service account may do this (26.05, 2026-11-23: 200 and 201); the application's own account needs only `catalogue`. The build writes into `docs/running.md` how the checks are run.
+- **Contracts:** `contracts/oauth.openapi.json` and `contracts/items.openapi.json`, each copied faithfully from the official contract (`EX-002`). The clients are generated by NSwag into `Minioasis.Koha/Generated/OAuth` and `Minioasis.Koha/Generated/Items` (`EX-003`). A handwritten partial part of the generated token client makes its serializer ignore null values, so that `client_id` and `client_secret` are absent from the form body (checked with NSwag 14.7.1 and this repository's `nswag.json`, 2026-11-23). The build writes the exact generation command into `docs/running.md`.
+- **Test Koha checks:** in `Minioasis.Koha.Tests`, marked so that they can be run alone, and skipped when the five `MINIOASIS_TEST_KOHA_*` variables are absent. They add the two Cloudflare Access headers through a test-only handler; the application's code does not know about them. `MINIOASIS_TEST_KOHA_BASE_URL` has the format of `MINIOASIS_KOHA_BASE_URL`; the maintainer adds `https://` to its present value, which is a bare host. The check for behaviors 1 and 5 creates a bibliographic record and an item (`POST /biblios`, `POST /biblios/{biblio_id}/items`), reads the item through the adapter, and deletes both. These set-up and clean-up calls are handwritten HTTP calls in the test project only, outside the focused contracts; `POST /biblios` takes MARC-in-JSON with the content type `application/marc-in-json`. The check for behavior 14 gives the token provider an invalid token first: the test Koha answers 401 to it, and the retry succeeds. The test Koha's service account may do this (26.05, 2026-11-23: 200 and 201); the application's own account needs only `catalogue`. The build writes into `docs/running.md` how the checks are run.
 - **Rule file:** `docs/best-practices/errors.md`, `ER-004`, gains the row "Method not allowed: the route does not support the request method | 405" in this pull request.
 
 ## Acceptance
