@@ -178,14 +178,14 @@ Every pull request is checked by a new session before it merges.
 
    Why: a model does not notice in a review the design problems that it does not notice when it writes.
 3. **A review is a second look, not proof.** The independent evidence is the maintainer's test of the running capability at transfer.
-4. **The reviewer answers four questions and reports each rule that the change breaks.** The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`. The reviewer does not list a verdict for every rule. A change that works but breaks a rule does not pass. The outcome is recorded under "Review" in the pull request.
+4. **The reviewer answers four questions and reports each rule that the change breaks.** For the build of a capability it answers three: the fourth, on tests, belongs to the verifier alone (section 8). The questions, and what counts as blocking, are in `.claude/agents/reviewer.md`. The reviewer does not list a verdict for every rule. A change that works but breaks a rule does not pass. The outcome is recorded under "Review" in the pull request.
 5. **What no check has shown is never reported as a pass.** A belief about Koha that only a test double supports is not a pass either: the test Koha must have shown it (`TS-013`). Mark such items "needs maintainer" under "Not proven" in the pull request, so that the maintainer checks them at transfer. A confident guess that is recorded as a pass breaks these rules.
 
 ## 8. Verify
 
 Every capability is verified one time: after its code is written and the review of its last pull request found no blocking issue, and before that pull request merges. A brief is never verified. A brief is checked (section 4).
 
-Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The review only does this for the behaviors that the reviewer doubts most.
+Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The reviewer does not repeat this work on a capability's build (section 7, rule 4), so that the check has one owner.
 
 ### The bar
 
