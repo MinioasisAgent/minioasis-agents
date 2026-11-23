@@ -72,9 +72,12 @@ public sealed class TestKohaChecks
         Assert.Equal(HttpStatusCode.OK, exchange.Status);
         Assert.Equal(HttpMethod.Post, exchange.Method);
         Assert.Equal("Basic", exchange.AuthorizationScheme);
-        Assert.Contains("grant_type=client_credentials", exchange.Body!.Split('&'));
-        Assert.DoesNotContain(current.ClientSecret, exchange.Body, StringComparison.Ordinal);
-        Assert.DoesNotContain(Uri.EscapeDataString(current.ClientSecret), exchange.Body, StringComparison.Ordinal);
+
+        // Each assertion on the body reports only true or false, so that a failure prints neither the body nor the
+        // secret (TS-013).
+        Assert.True(exchange.Body!.Split('&').Contains("grant_type=client_credentials"));
+        Assert.False(exchange.Body.Contains(current.ClientSecret, StringComparison.Ordinal));
+        Assert.False(exchange.Body.Contains(Uri.EscapeDataString(current.ClientSecret), StringComparison.Ordinal));
     }
 
     [Fact]

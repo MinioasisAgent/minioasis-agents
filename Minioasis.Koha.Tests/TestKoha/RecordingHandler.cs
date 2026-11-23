@@ -27,5 +27,9 @@ internal sealed class RecordingHandler : DelegatingHandler
         Uri Uri,
         string? AuthorizationScheme,
         string? Body,
-        HttpStatusCode Status);
+        HttpStatusCode Status)
+    {
+        /// <summary>Leaves out the body, so that a failed assertion that prints an exchange prints no credential.</summary>
+        public override string ToString() => $"{Method} {Uri.AbsolutePath} -> {(int)Status}";
+    }
 }
