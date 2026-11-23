@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Minioasis.Api.Tests.Shared;
 using Minioasis.Application.Shared.Errors;
 using Xunit;
@@ -27,9 +28,15 @@ public sealed class StartupTests
 
         var exception = Assert.ThrowsAny<Exception>(() => factory.Server);
 
-        Assert.Contains(setting, exception.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("koha.internal", exception.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("test-secret", exception.ToString(), StringComparison.Ordinal);
+        // The host logs the cause before it stops. Under load, the test factory sometimes throws an
+        // ObjectDisposedException in place of that cause, so the test reads the cause from the log.
+        var cause = Assert.Single(factory.Logs.Entries, entry => entry.Exception is OptionsValidationException).Exception!;
+        Assert.Contains(setting, cause.Message, StringComparison.Ordinal);
+        foreach (var text in new[] { cause.ToString(), exception.ToString() })
+        {
+            Assert.DoesNotContain("koha.internal", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("test-secret", text, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
