@@ -9,13 +9,13 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Brief 001, get item (`docs/briefs/001-get-item.md`), was approved on 2026-11-23 (pull request 2) and is being built. It also covers the Koha connection and the API error contract.
+- None. Brief 001, get item (`docs/briefs/001-get-item.md`), is `built` (2026-11-23) and waits for the maintainer's transfer from the branch `ready/001-get-item`.
 
 ## What exists
 
 - **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), which the maintainer supplied on 2026-11-23 as the contract of Koha 26.05, and the pinned NSwag client generator (`dotnet-tools.json`, `nswag.json`).
 - **The foundation:** `minioasis.slnx` and the three projects of `AR-001` (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`), and a `.Tests` project for each (`TS-004`), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
-- **Brief 001, implemented on branch `ai/sprint/001-build`, not yet merged:**
+- **Brief 001 (`built`, reviewed and verified on 2026-11-23):**
   - `GET /api/v1/items/{id}`, which returns an item's identifiers, barcode, and call number.
   - The API error contract: Problem Details with `code` and `traceId`, masked server failures, `not_found` and `method_not_allowed`, the errors of HTTP itself that Api defines, the message file `Minioasis.Api/Resources/errors.en.json`, and its startup check.
   - The connection to Koha: the three `MINIOASIS_KOHA_*` settings and their startup check, the client-credentials token provider, the deadline, bearer, and charset handlers, and the focused contracts `contracts/oauth.openapi.json` and `contracts/items.openapi.json` with their generated clients.

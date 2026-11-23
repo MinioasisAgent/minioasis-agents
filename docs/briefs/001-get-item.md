@@ -3,7 +3,7 @@
 
 # 001 — Get item
 
-- **Status:** approved
+- **Status:** built
 - **Changes data in Koha:** no
 - **Related:** none
 
