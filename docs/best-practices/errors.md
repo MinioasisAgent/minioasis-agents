@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-23
 
 # Errors
 
@@ -28,7 +28,7 @@ An error has exactly one definition: a stable code and a category, declared in t
 To add an error:
 
 1. Declare the definition, with its code and its category, in the feature's `<Feature>ErrorDefinitions` group.
-2. If the client can act on it (validation or not found), add its message to the English resource file, under exactly the same code (`ER-011`).
+2. If the client can act on it (validation, not found, or method not allowed), add its message to the English resource file, under exactly the same code (`ER-011`).
 3. If it is a server failure, add no message.
 4. Return the error by referring to the definition, and supply a value for every placeholder in its message.
 
@@ -79,6 +79,7 @@ The category decides the status, in one place in Api. A feature never chooses a 
 | --- | --- |
 | Validation: the request is invalid | 400 |
 | Not found | 404 |
+| Method not allowed: the route does not support the request method | 405 |
 | A dependency returned a response that cannot be used | 502 |
 | A dependency is unavailable | 503 |
 | Authentication to a dependency failed | 500 |
