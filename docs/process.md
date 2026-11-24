@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-24
 
 # Process
 
@@ -15,7 +15,7 @@ A **brief** is one document that describes one **capability**: what staff need, 
 | 2. Write the brief | Fill in every part of the brief (section 3). | Coordinator | Status `draft` |
 | 3. Check the brief | A new `reviewer` looks for the decision that is most likely wrong, and for holes (section 4). | `reviewer` | Findings, or none |
 | 4. Approve | The maintainer accepts the brief's pull request (section 5). | Maintainer | Status `approved` |
-| 5. Build | One coder builds the whole capability, tests first (section 6). A new `reviewer` reviews it (section 7). | `coder`, then `reviewer` | A pull request |
+| 5. Build | One coder builds each component of the capability (section 6). A new `reviewer` reviews each pull request (section 7). | `coder`, then `reviewer` | A pull request for each component |
 | 6. Verify | Every capability, after its review (section 8). | `verifier` | The result, in the pull request |
 | 7. Finish | Set the status, merge, and mark the commit that the maintainer transfers (section 9). | Coordinator | Status `built`, branch `ready/<NNN>-<short-name>` |
 | 8. Transfer | The maintainer tests the running capability and merges it into production (`docs/transfer.md`). | Maintainer | Status `transferred` |
@@ -74,12 +74,16 @@ Keep the brief short enough to read in one sitting, about three pages. If it gro
 | --- | --- |
 | 1. Goal | What staff can do afterwards, in one or two sentences. |
 | 2. What people do and see | The walk-through, step by step. The maintainer tests the finished capability by following it. |
-| 3. The API | Routes, requests, response fields, error codes, and the text staff see. Who may call it. Which patron data is returned. |
+| 3. The API | The routes, and for each the operation in the API contract. Error codes, and the text staff see. Who may call it. Which patron data is returned. |
 | 4. Decisions | Each decision with who made it and why. What still needs the maintainer's decision. What the author is least sure of. |
 | 5. Not included | What the capability deliberately leaves out. |
 | 6. Behaviors that must have a test | One numbered line each, including what the system must never do. |
-| 7. How it will be built | The approach, every new package with its version and reason, and the files by project. |
+| 7. How it will be built | The approach, every new package with its version and reason, and the files, by component and project. |
 | 8. Failure and retry | Only for a capability that changes data in Koha. |
+
+**The API contract.** The API's routes, requests, response fields, and status codes are written in one OpenAPI file, `contracts/minioasis.openapi.json`. A brief that adds or changes a part of the API changes that file in the brief's own pull request, so that one acceptance covers both. Part 3 names the operations and does not repeat their fields. Both coders build from the file, and neither changes it (section 6).
+
+Why: two coders build the two components at the same time, and the contract is all they share. A shape that is written twice, or only in prose, gets built two ways.
 
 Five rules for the brief:
 
@@ -114,11 +118,11 @@ The maintainer accepts the brief's pull request in one of the three ways that `C
 ### Before code
 
 1. The brief is `approved`.
-2. The coordinator gives the whole capability to one `coder`. `CLAUDE.md`, section 4, rule 5, says when a second coder may start.
+2. The coordinator gives each component of the capability to one `coder`: one for the backend, and one for the frontend when the capability has a screen. The two work at the same time, each on its own branch with its own pull request. `CLAUDE.md`, section 4, rule 5, says when a second coder for the same component may start.
 
 ### While building
 
-1. **Write each test first and watch it fail** (`TS-001`).
+1. **In the backend, write each test first and watch it fail** (`TS-001`). In the frontend, `FE-006` says what has a test.
 2. **Deliver every behavior in part 6 in full.** No pull request narrows an approved behavior with a "simplified", "for now", "placeholder", or "basic" version. Deliver the behavior, or propose splitting the brief, which is Level 2.
 3. **Check against the test Koha** (`TS-013`) wherever the work depends on how Koha behaves. Do not rely on the contract alone (`EX-001`).
 4. **The brief guides the build. It does not script it.**
@@ -127,6 +131,9 @@ The maintainer accepts the brief's pull request in one of the three ways that `C
    - Inside the limits, the coder decides how to build the capability well, and is expected to.
 
    Why: a plan that fixes every file and every test in advance leaves the coder little to decide and little reason to question.
+5. **Stay in your component.** A coder changes neither the other component's folder nor the API contract. If the contract is wrong or incomplete, stop and report it. A change to it is a change to the brief (Level 2), and both coders then build from the changed file.
+
+   Why: a coder who bends the contract to suit one component breaks the other without any check failing.
 
 ### Fix without asking
 
@@ -159,7 +166,7 @@ Why: every transfer then contains only complete capabilities.
 
 ### Pull request size and hand-off
 
-Build a capability in as few pull requests as can each be reviewed well. Normally that is one. The coordinator splits the build only when one pull request would be too large to review in one reading. Each part must still merge with passing checks.
+Build a capability in as few pull requests as can each be reviewed well. Normally that is one for each component. The coordinator splits the build only when one pull request would be too large to review in one reading. Each part must still merge with passing checks.
 
 If a session ends with work unfinished, push the branch, and end the draft pull request's description with a "Hand-off" section. It holds the current state, what remains, the decisions made and why, and the next action. A new session must be able to continue from that section and `docs/STATE.md` alone.
 
@@ -171,7 +178,7 @@ Every pull request is checked by a new session before it merges. The one excepti
 | --- | --- | --- |
 | Brief check | A pull request that writes or revises a brief (section 4) | `reviewer` |
 | Review | Every other pull request, including a wording correction to a brief | `reviewer` |
-| Verification | Every capability, one time, after the review of its last pull request and before that pull request merges (section 8) | `verifier` |
+| Verification | Every capability, one time, after its review (section 8) | `verifier` |
 
 1. **Each check is independent.** The coordinator starts each check as a new session that did not write the work (`CLAUDE.md`, section 4, rule 2). It gives that session the brief and the code, not the author's explanation. A session that has already checked the work is not new: each round starts another.
 2. **The reviewer runs on a different model family from the coders.** If the session that wrote the work ran on the reviewer's family, the pull request says so.
@@ -183,7 +190,12 @@ Every pull request is checked by a new session before it merges. The one excepti
 
 ## 8. Verify
 
-Every capability is verified one time: after its code is written and the review of its last pull request found no blocking issue, and before that pull request merges. A brief is never verified. A brief is checked (section 4).
+Every capability is verified one time, after its code is written and reviewed. A brief is never verified. A brief is checked (section 4). The verification has two parts:
+
+| Part | For | When |
+| --- | --- | --- |
+| The bar | The backend | After the review of the backend's last pull request found no blocking issue, and before that pull request merges |
+| The joint check | A capability with a frontend part | After both components passed their reviews, and before the last of their pull requests merges |
 
 Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The reviewer does not do this work (section 7, rule 4), so the check has one owner.
 
@@ -205,6 +217,17 @@ The verifier also confirms three things about each behavior:
 - it is **wired**: it is registered for dependency injection and reachable from its endpoint (`TS-005`).
 
 The verifier lists the behaviors itself, from the words of the brief. The author prepares no checklist for it. The procedure is in `.claude/agents/verifier.md`.
+
+### The joint check
+
+> Every step in part 2 of the brief shows, in a real browser, what part 2 says.
+
+The verifier starts the backend and the built frontend together, as `docs/running.md` describes, and follows part 2 step by step in a browser that it drives with Playwright. Playwright is the verifier's own tool and not a dependency of the repository.
+
+- A step that does not show what part 2 says is a **blocking** finding. The verifier says where the problem started: in the brief, the contract, the backend, or the frontend.
+- Anything else is **non-blocking**.
+
+Why: each component can pass its own checks and still read the contract differently. Only running the two together shows that. The frontend alone is not held to the bar, because it owns no rule (`FE-002`) and a mistake in it cannot change a record in Koha.
 
 ## 9. Finish
 
@@ -263,7 +286,7 @@ This section applies to every task that changes a file. Read-only explanations, 
 3. **Fetch `origin/master`.** If it cannot be fetched and verified, stop and report the blocker. Never work from a ref that may be stale.
 4. **Create the task branch from `origin/master`.**
 
-When the coordinator starts a second coder to work at the same time as the first, each coder works in its own worktree on its own branch. A branch merges the latest `master` before its pull request merges.
+Coders that work at the same time each work in their own worktree on their own branch. A branch merges the latest `master` before its pull request merges.
 
 ### Branch names
 
@@ -314,7 +337,7 @@ An agent may merge its own Level 1 pull request only when all of these hold:
 4. Every test Koha check that applies ran and passed (section 13). If one could not run, the pull request is Level 2, because it would merge with a check left out (`CLAUDE.md`, section 3, item 5). Label it `needs-human`, and say which check and why.
 
    Why: without this, a capability could again be built on a belief about Koha that nothing has tested.
-5. For a capability's last pull request: the verification passed (section 8).
+5. The part of the verification that section 8 requires before this pull request merges has passed.
 6. `docs/STATE.md` and `docs/ROADMAP.md` are updated where their content changed.
 
 Merge with **squash**, then delete the task branch. The one exception is a production sync, which merges with a merge commit (`docs/transfer.md`, section 4).

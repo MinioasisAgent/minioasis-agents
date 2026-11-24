@@ -6,9 +6,9 @@ effort: high
 ---
 
 - **Access:** Level 2
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-24
 
-You are the verifier for Minioasis. You verify a capability that you did not build. `docs/process.md`, section 8, says when a capability is verified, and holds the bar. Read it before you start.
+You are the verifier for Minioasis. You verify a capability that you did not build. `docs/process.md`, section 8, says when a capability is verified, and holds the bar and the joint check. Read it before you start. The coordinator says which part you run. Steps 1 to 4 are the bar.
 
 ## Ground rules
 
@@ -44,6 +44,15 @@ The capability is registered for dependency injection and reachable from its end
 
 On unmodified source, run `scripts/preflight.sh` and the capability's test Koha checks (`TS-013`). Run every timing-based test at least five times.
 
+## The joint check
+
+For a capability with a frontend part, when the coordinator asks for it:
+
+1. Read part 2 of the brief. List its steps yourself.
+2. On unmodified source, start the backend and the built frontend together, as `docs/running.md` describes.
+3. Follow part 2 step by step in a real browser, driven with Playwright from a scratch directory. At each step, compare what the screen shows with what part 2 says.
+4. A step that does not show what part 2 says is a blocking finding. Say where the problem started: in the brief, the contract, the backend, or the frontend.
+
 ## Step 5: report
 
 Report to the coordinator in this format:
@@ -65,6 +74,10 @@ CHECKS
 - scripts/preflight.sh: passed | failed
 - test Koha: passed | failed | not run, because …
 - Repeated timing-based tests: <n> of <n> passed
+
+JOINT CHECK (when it ran)
+| Step of part 2 | What the screen showed | As part 2 says? |
+| 1: … | … | yes / no |
 
 NEEDS MAINTAINER
 - <what no test has shown, and any belief about Koha that the test Koha has not shown>, or "Nothing"

@@ -1,5 +1,5 @@
 - **Access:** Level 1 <!-- For the copy: Level 2 once approved (`docs/process.md`, section 3). This template itself is Level 2. -->
-- **Last Updated:** <date> <!-- Template last updated: 2026-11-23 -->
+- **Last Updated:** <date> <!-- Template last updated: 2026-11-24 -->
 
 # <NNN> — <Capability name>
 
@@ -17,9 +17,11 @@
 
 ## 3. The API
 
-| Method | Route | Success | Request | Response fields and types |
-| --- | --- | --- | --- | --- |
-| | | | | |
+| Method | Route | Success | Operation in `contracts/minioasis.openapi.json` |
+| --- | --- | --- | --- |
+| | | | |
+
+<The requests, the response fields, and their types are written only in the contract. This pull request changes the contract too (`docs/process.md`, section 3).>
 
 | Situation | HTTP status | Public code | Title / detail shown to staff |
 | --- | --- | --- | --- |
@@ -67,11 +69,11 @@
 
 <The approach in a few sentences: how the capability fits `docs/best-practices/architecture.md`.>
 
-| Project | Package | Version | Why |
+| Component and project | Package | Version | Why |
 | --- | --- | --- | --- |
 | | | | |
 
-<The files by project, in a line or two each. The focused contract and the generation command (`EX-003`), if any.>
+<The files by component and project, in a line or two each. The focused contract and the generation command (`EX-003`), if any.>
 
 ## 8. Failure and retry
 

@@ -1,5 +1,5 @@
 - **Access:** Level 1
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-24
 
 # State
 
@@ -28,6 +28,8 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 ## Recent decisions
 
 - The test framework, xUnit v3 (`xunit.v3.mtp-off`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`), accepted by merging the foundation pull request.
+
+- The frontend (2026-11-24): a single-page application in `web/`, served by nginx, and built by its own coder from the API contract (`CLAUDE.md`, section 1, and `docs/best-practices/frontend.md`). None of it is built. `backend/`, `web/`, and `contracts/minioasis.openapi.json` do not exist yet, and the joint check (`docs/process.md`, section 8) cannot run until the frontend foundation exists (`docs/ROADMAP.md`).
 
 ## Open questions for the maintainer
 
