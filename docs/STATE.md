@@ -33,6 +33,9 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Open questions for the maintainer
 
+- **How the joint check's backend reaches a Koha.** The application sends no Cloudflare Access headers, so a running backend cannot reach the test Koha, and any other Koha is Level 3. Until this is decided, the joint check cannot run.
+- **Whether Cloudflare Tunnel in front of nginx is the real deployment** (`FE-004`).
+
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
 - **Whether get item is transferred to production before staff access control (brief 002) is built.**
 

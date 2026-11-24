@@ -13,6 +13,8 @@
 
 ## 2. What people do and see
 
+<Step by step. Include what staff see when a step fails. The joint check follows these steps in a browser (`docs/process.md`, section 8).>
+
 1. …
 
 ## 3. The API

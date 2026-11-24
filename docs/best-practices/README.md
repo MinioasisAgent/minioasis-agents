@@ -22,7 +22,7 @@ How code and tests are written in Minioasis. Every rule applies to every capabil
 | --- | --- |
 | Any C# file | `architecture.md`, `code-design.md` |
 | An error definition, a result, a failure path, an endpoint's response, or `Minioasis.Api/Resources/` | also `errors.md` |
-| `Minioasis.Koha/`, `contracts/`, or the client generator's configuration | also `external-systems.md` and `errors.md` |
+| `Minioasis.Koha/`, a Koha contract in `contracts/`, or the client generator's configuration | also `external-systems.md` and `errors.md` |
 | Any test project | also `testing.md` |
 | Any file under `web/` | `frontend.md` only |
 | `contracts/minioasis.openapi.json` | `errors.md`, and `FE-005` |

@@ -73,7 +73,7 @@ Keep the brief short enough to read in one sitting, about three pages. If it gro
 | Part | Holds |
 | --- | --- |
 | 1. Goal | What staff can do afterwards, in one or two sentences. |
-| 2. What people do and see | The walk-through, step by step. The maintainer tests the finished capability by following it. |
+| 2. What people do and see | The walk-through, step by step, including what staff see when a step fails. It is what the frontend must show. The joint check (section 8) and the maintainer both test the finished capability by following it. |
 | 3. The API | The routes, and for each the operation in the API contract. Error codes, and the text staff see. Who may call it. Which patron data is returned. |
 | 4. Decisions | Each decision with who made it and why. What still needs the maintainer's decision. What the author is least sure of. |
 | 5. Not included | What the capability deliberately leaves out. |
@@ -81,7 +81,7 @@ Keep the brief short enough to read in one sitting, about three pages. If it gro
 | 7. How it will be built | The approach, every new package with its version and reason, and the files, by component and project. |
 | 8. Failure and retry | Only for a capability that changes data in Koha. |
 
-**The API contract.** The API's routes, requests, response fields, and status codes are written in one OpenAPI file, `contracts/minioasis.openapi.json`. A brief that adds or changes a part of the API changes that file in the brief's own pull request, so that one acceptance covers both. Part 3 names the operations and does not repeat their fields. Both coders build from the file, and neither changes it (section 6).
+**The API contract.** One OpenAPI file, `contracts/minioasis.openapi.json`, holds every route of the API with its request, its response fields, and its status codes. A brief that adds or changes a part of the API changes that file in the brief's own pull request, so that one acceptance covers both. Part 3 names each route and says what each status means to staff. It does not repeat the fields. Both coders build from the file, and neither changes it (section 6).
 
 Why: two coders build the two components at the same time, and the contract is all they share. A shape that is written twice, or only in prose, gets built two ways.
 
@@ -131,7 +131,7 @@ The maintainer accepts the brief's pull request in one of the three ways that `C
    - Inside the limits, the coder decides how to build the capability well, and is expected to.
 
    Why: a plan that fixes every file and every test in advance leaves the coder little to decide and little reason to question.
-5. **Stay in your component.** A coder changes neither the other component's folder nor the API contract. If the contract is wrong or incomplete, stop and report it. A change to it is a change to the brief (Level 2), and both coders then build from the changed file.
+5. **Stay in your component.** A coder changes neither the other component's folder nor the API contract. If the API contract is wrong or incomplete, stop and report it. A change to it is a change to the brief (Level 2), and both coders then build from the changed file.
 
    Why: a coder who bends the contract to suit one component breaks the other without any check failing.
 
@@ -195,7 +195,7 @@ Every capability is verified one time, after its code is written and reviewed. A
 | Part | For | When |
 | --- | --- | --- |
 | The bar | The backend | After the review of the backend's last pull request found no blocking issue, and before that pull request merges |
-| The joint check | A capability with a frontend part | After both components passed their reviews, and before the last of their pull requests merges |
+| The joint check | A capability with a frontend part | After both components passed their reviews, and before the last of their pull requests merges. It runs on that pull request's branch with the latest `master` merged in. |
 
 Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The reviewer does not do this work (section 7, rule 4), so the check has one owner.
 
@@ -224,10 +224,10 @@ The verifier lists the behaviors itself, from the words of the brief. The author
 
 The verifier starts the backend and the built frontend together, as `docs/running.md` describes, and follows part 2 step by step in a browser that it drives with Playwright. Playwright is the verifier's own tool and not a dependency of the repository.
 
-- A step that does not show what part 2 says is a **blocking** finding. The verifier says where the problem started: in the brief, the contract, the backend, or the frontend.
+- A step that does not show what part 2 says is a **blocking** finding. The verifier says where the problem started: in the brief, the API contract, the backend, or the frontend.
 - Anything else is **non-blocking**.
 
-Why: each component can pass its own checks and still read the contract differently. Only running the two together shows that. The frontend alone is not held to the bar, because it owns no rule (`FE-002`) and a mistake in it cannot change a record in Koha.
+Why: each component can pass its own checks and still read the contract differently. Only running the two together shows that. The frontend alone is not held to the bar, because it holds no library rule (`FE-002`). What it must get right is what it shows and what it sends, and the joint check tests exactly that.
 
 ## 9. Finish
 
@@ -352,7 +352,7 @@ Before you commit, run every check that applies to the files you changed.
 | --- | --- |
 | C# code or a project file | `scripts/preflight.sh` (`scripts/preflight.ps1` on Windows) |
 | Code or a test whose brief marks a behavior for the test Koha | Also the test Koha checks (`TS-013`), run as `docs/running.md` describes. Report "test Koha: passed", "failed", or "not run" with the reason. A failure blocks the merge. A check that could not run makes the pull request Level 2 (section 12). |
-| A contract or the generator configuration | Regenerate the affected client (`EX-003`), inspect the generated diff, then run the C# check |
+| A Koha contract or the generator configuration | Regenerate the affected client (`EX-003`), inspect the generated diff, then run the C# check |
 | The solution file only | `dotnet sln minioasis.slnx list` shows every project |
 | Dockerfile or Compose | `docker compose config` and `docker compose build`, when Docker is available |
 | Documentation or the rulebook | `git diff --check`. Every path, rule ID, and command you mention exists. Each changed document's header is current (section 14). Read the final diff. |

@@ -3,7 +3,7 @@
 
 # Frontend
 
-Rules `FE-001` to `FE-006`. They apply to everything under `web/`. The format is explained in [`README.md`](README.md). The examples use the made-up capability of that file, renewing a loan.
+Rules `FE-001` to `FE-006`. They govern the frontend: everything under `web/`, and how it is served. The format is explained in [`README.md`](README.md). The examples use the made-up capability of that file, renewing a loan.
 
 ## FE-001 Build the frontend only with the approved tools
 
@@ -13,10 +13,10 @@ Each tool has one job, so no two tools compete for it. A second tool for a job t
 | --- | --- |
 | React | Components, state, and rendering |
 | TypeScript, in strict mode | Static types. No source file is plain JavaScript. |
-| Vite | The development server and the production build |
+| Vite | The development server and the production build. Vite does not check types, so the build runs the TypeScript compiler's check first and stops on a type error. |
 | Tailwind CSS | Styling |
 | Base UI | Accessible, unstyled interactive parts, such as a dialog or a menu. It is the only library of this kind. |
-| shadcn/ui | Styled components, built on Base UI and copied into `web/` as source |
+| shadcn/ui | Styled components, set up with Base UI as their base and copied into `web/` as source |
 | React Router, used as a library | Mapping an address to a screen. Its framework mode is not used (`FE-003`). |
 | openapi-typescript | Generating the API's types from the contract (`FE-005`) |
 | openapi-fetch | Calling the API with those types |
@@ -25,6 +25,7 @@ Each tool has one job, so no two tools compete for it. A second tool for a job t
 | npm | Installing packages |
 
 - **Any other library needs the maintainer's acceptance** (`CLAUDE.md`, section 3, Level 2, item 4). That includes a state library, a forms library, and a data-fetching library.
+- **A package that an approved tool needs in order to work comes with that tool:** its own plugins, the packages that a shadcn/ui component imports, and the browser environment that Vitest needs to test a component. The pull request that adds one names it and the tool that needs it.
 - **`web/package.json` and its lock file are the one place for versions.** A major version upgrade is Level 2.
 - **A shadcn/ui component is our source code once it is copied in.** Editing it is normal work. The generated API types are generated code and are never edited by hand.
 
@@ -34,7 +35,7 @@ Each tool has one job, so no two tools compete for it. A second tool for a job t
 
 ## FE-002 Keep the frontend thin: it shows, collects, and calls
 
-The backend owns every validation, every decision, and every library rule (`CLAUDE.md`, section 1, rule 1). A rule that the frontend also holds becomes a second copy, and the two drift apart. The frontend also runs in a browser, where anyone can change it, so nothing it checks can be trusted.
+The backend owns every library rule and every check of one (`CLAUDE.md`, section 1, rule 1). A rule that the frontend also holds becomes a second copy, and the two drift apart. The frontend also runs in a browser, where anyone can change it, so nothing it checks can be trusted.
 
 - The frontend may refuse to send a form whose required field is empty. It makes no other check of its own.
 - It shows the backend's error text as the backend returns it.
@@ -47,19 +48,27 @@ if (loan.renewalCount >= 3) {
 }
 
 // GOOD: the frontend asks, and shows the backend's answer
-const { data, error } = await api.POST("/api/v1/loans/{id}/renewals", {
-  params: { path: { id } },
-});
-if (error) {
-  return <p role="alert">{error.detail}</p>;
+async function renew() {
+  const { error } = await api.POST("/api/v1/loans/{id}/renewal", {
+    params: { path: { id } },
+  });
+  setProblem(error);
 }
+
+// The backend's title is always there. Its detail is not (`ER-006`).
+{problem && (
+  <div role="alert">
+    <p>{problem.title}</p>
+    {problem.detail && <p>{problem.detail}</p>}
+  </div>
+)}
 ```
 
 ---
 
 ## FE-003 Ship static files only
 
-The production server runs two programs for Minioasis: nginx and the backend. A program that renders pages on a server is a third one to secure, start, and watch, and it gives rules a second place to live.
+Behind Cloudflare, Minioasis runs as two programs: nginx and the backend. A program that renders pages on a server is a third one to secure, start, and watch, and it gives rules a second place to live.
 
 - No server-side rendering, and no full-stack JavaScript framework, such as Next.js or the framework mode of React Router.
 - No Node.js process runs in production. Node.js is a tool on a developer's machine and in CI.
@@ -84,12 +93,12 @@ How a request travels:
 1. The staff member's browser opens the Minioasis address over HTTPS. Cloudflare Access signs the staff member in before anything reaches the server.
 2. Cloudflare Tunnel passes each request to nginx. Nginx listens on localhost only.
 3. Nginx serves the built frontend files. For an address that is not a file and does not start with `/api/`, it serves `index.html`, so that React Router can show the right screen.
-4. The frontend calls the API with the browser's own `fetch`, on relative paths that start with `/api/`. It sends no token and stores none.
+4. The frontend calls the API (`FE-005`) on relative paths that start with `/api/`. It sends no token and stores none.
 5. Cloudflare Access adds a signed token to every request that it lets through. Nginx passes requests under `/api/` to the backend, with that token unchanged.
 6. The backend listens on localhost only. It validates the token itself on every request, does the work, and answers in JSON.
 7. The answer returns through nginx and Cloudflare to the browser, and React updates the screen.
 
-When the sign-in ends while a screen is open, an API call gets Cloudflare's sign-in redirect and not the backend's JSON. The frontend then asks the staff member to reload the page. It does not report a backend error.
+When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call, and Cloudflare Access then answers 401. On a 401 the frontend asks the staff member to reload the page. It does not report a backend error.
 
 In development, Vite's development server takes the place of nginx and passes `/api/` to the backend.
 
@@ -111,12 +120,12 @@ server {
 
 ```ts
 // BAD: an absolute address, and a token that the frontend handles
-fetch("https://minioasis.example/api/v1/items/1", {
+fetch("https://minioasis.example/api/v1/loans/1", {
   headers: { Authorization: `Bearer ${token}` },
 });
 
-// GOOD: a relative path, and nothing about the sign-in
-api.GET("/api/v1/items/{id}", { params: { path: { id } } });
+// GOOD: a relative path, and no token
+api.GET("/api/v1/loans/{id}", { params: { path: { id } } });
 ```
 
 ---
@@ -148,11 +157,17 @@ const { data: loan } = await api.GET("/api/v1/loans/{id}", {
 
 A thin frontend has little logic. A test that only repeats what a component renders costs more to keep than it catches. What staff see is checked once, against the running backend, in the joint check (`docs/process.md`, section 8).
 
-- Write a test where the frontend decides something: a function that formats a date, or a component that chooses between two states.
+- Write a test where the frontend has logic of its own: a function that formats a date, or a component that chooses between two states.
 - Write no test for a component that only shows what it is given.
 - The rules of [`testing.md`](testing.md) apply to the backend. They do not apply under `web/`.
 
-```ts
+```tsx
+// BAD: the test repeats what the component renders
+test("shows the barcode", () => {
+  render(<Barcode value="MO-1" />);
+  expect(screen.getByText("MO-1")).toBeVisible();
+});
+
 // GOOD: logic that the frontend owns has a test
 test("formats a due date in the staff member's locale", () => {
   expect(formatDueDate("2026-12-01", "en-GB")).toBe("1 December 2026");
