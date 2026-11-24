@@ -123,10 +123,10 @@ The maintainer accepts the brief's pull request in one of the three ways that `C
 ### While building
 
 1. **In the backend, write each test first and watch it fail** (`TS-001`). In the frontend, `FE-006` says what has a test.
-2. **Deliver every behavior in part 6 in full.** No pull request narrows an approved behavior with a "simplified", "for now", "placeholder", or "basic" version. Deliver the behavior, or propose splitting the brief, which is Level 2.
+2. **Deliver every behavior in part 6 in full, and in the frontend every step of part 2.** No pull request narrows an approved behavior with a "simplified", "for now", "placeholder", or "basic" version. Deliver the behavior, or propose splitting the brief, which is Level 2.
 3. **Check against the test Koha** (`TS-013`) wherever the work depends on how Koha behaves. Do not rely on the contract alone (`EX-001`).
 4. **The brief guides the build. It does not script it.**
-   - These parts of the brief are limits: part 3 (the API), part 4 (the decisions), part 6 (the behaviors), part 8 (failure and retry), and the packages, projects, and layers in part 7. Stop and ask before you depart from a limit.
+   - These parts of the brief are limits: part 2 (what staff do and see), part 3 (the API), part 4 (the decisions), part 6 (the behaviors), part 8 (failure and retry), and the packages, projects, and layers in part 7. Stop and ask before you depart from a limit.
    - The approach and the file list in part 7 are guidance. The coder may build the capability a better way, and says how and why under "Deviations" in the pull request. The brief is not edited for that.
    - Inside the limits, the coder decides how to build the capability well, and is expected to.
 
@@ -152,7 +152,7 @@ Stop, and open a Level 2 pull request (`CLAUDE.md`, section 3), when the work ne
 
 - a route, field, error code, or decision that differs from the brief;
 - a package, project, or layer that part 7 does not list;
-- a departure from a behavior in part 6, or from part 8.
+- a departure from a step in part 2, from a behavior in part 6, or from part 8.
 
 Never build the departure first. Say what you found, what you recommend, and why.
 
@@ -265,7 +265,7 @@ A **round** is one pass of the work followed by its check.
 | --- | --- | --- |
 | **Brief** | The coordinator writes or changes the brief, and a new `reviewer` runs the brief check. | Two rounds per brief, the first included |
 | **Review** | A coder writes or fixes one pull request, and a new `reviewer` reviews it. | Three rounds per pull request, or fewer if a round does not reduce the blocking findings |
-| **Verification** | A new `verifier` checks the capability. Before a second round, a coder fixes the findings and a new `reviewer` reviews the fix. That review counts as a round of the pull request's review. The second round re-checks only what the fix could affect. | Two rounds per capability |
+| **Verification** | A new `verifier` checks the capability. Before a second round, a coder fixes the findings and a new `reviewer` reviews the fix. That review counts as a round of the pull request's review. The second round re-checks only what the fix could affect. | Two rounds per capability, counted for each part of the verification |
 
 The limits count the agents' own rounds. A revision that the maintainer asks for when accepting a brief does not count.
 

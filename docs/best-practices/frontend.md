@@ -25,7 +25,7 @@ Each tool has one job, so no two tools compete for it. A second tool for a job t
 | npm | Installing packages |
 
 - **Any other library needs the maintainer's acceptance** (`CLAUDE.md`, section 3, Level 2, item 4). That includes a state library, a forms library, and a data-fetching library.
-- **A package that an approved tool needs in order to work comes with that tool:** its own plugins, the packages that a shadcn/ui component imports, and the browser environment that Vitest needs to test a component. The pull request that adds one names it and the tool that needs it.
+- **A package that an approved tool needs in order to work is still a package.** A plugin, a package that a shadcn/ui component imports, or a library that Vitest needs to test a component is listed in part 7 of the brief, or in the Level 2 pull request that adds it, like any other (`docs/process.md`, section 6).
 - **`web/package.json` and its lock file are the one place for versions.** A major version upgrade is Level 2.
 - **A shadcn/ui component is our source code once it is copied in.** Editing it is normal work. The generated API types are generated code and are never edited by hand.
 
@@ -49,10 +49,12 @@ if (loan.renewalCount >= 3) {
 
 // GOOD: the frontend asks, and shows the backend's answer
 async function renew() {
-  const { error } = await api.POST("/api/v1/loans/{id}/renewal", {
+  const { error, response } = await api.POST("/api/v1/loans/{id}/renewal", {
     params: { path: { id } },
   });
-  setProblem(error);
+  if (!response.ok) {
+    setProblem(error);
+  }
 }
 
 // The backend's title is always there. Its detail is not (`ER-006`).
@@ -88,7 +90,7 @@ GOOD: browser ──► nginx ──► static files
 
 With one address, the browser needs no cross-origin permission, the backend needs no CORS setting, and the frontend never handles a token.
 
-How a request travels:
+How a request travels in production. Steps 5 and 6 hold once staff access control is built (`docs/ROADMAP.md`).
 
 1. The staff member's browser opens the Minioasis address over HTTPS. Cloudflare Access signs the staff member in before anything reaches the server.
 2. Cloudflare Tunnel passes each request to nginx. Nginx listens on localhost only.
@@ -98,7 +100,7 @@ How a request travels:
 6. The backend listens on localhost only. It validates the token itself on every request, does the work, and answers in JSON.
 7. The answer returns through nginx and Cloudflare to the browser, and React updates the screen.
 
-When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call, and Cloudflare Access then answers 401. On a 401 the frontend asks the staff member to reload the page. It does not report a backend error.
+When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call. By Cloudflare's documentation, Access then answers 401; the brief for staff access control confirms it on the real setup. On a 401 the frontend asks the staff member to reload the page. It does not report a backend error.
 
 In development, Vite's development server takes the place of nginx and passes `/api/` to the backend.
 
@@ -136,7 +138,7 @@ The API contract (`docs/process.md`, section 3) is the one description of the AP
 
 - Generate the types from the contract with openapi-typescript. Regenerate them when the contract changes.
 - Call the API only through the openapi-fetch client that uses those types.
-- Never change the contract to suit the frontend. If the contract is wrong, stop and report it (`docs/process.md`, section 6).
+- Never change the contract to suit the frontend. If the contract is wrong or incomplete, stop and report it (`docs/process.md`, section 6).
 
 ```ts
 // BAD: a type written by hand
