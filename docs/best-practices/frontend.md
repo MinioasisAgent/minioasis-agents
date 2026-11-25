@@ -110,7 +110,7 @@ How a request travels in production. The backend's part of step 6 holds once sta
 
 When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call. By Cloudflare's documentation ("Session management", section "AJAX"), Access then answers 401. The backend requires the same header on every call, and refuses a call without it (`docs/briefs/002-staff-access-control.md`).
 
-The backend answers 401 too, as Problem Details, when it cannot confirm the token. On a 401 from either, the frontend reloads the page one time, so that Cloudflare Access can sign the staff member in again. If the first API call after that reload is also answered 401, the frontend does not reload again: it shows the backend's error when the 401 is Problem Details, and otherwise asks the staff member to sign in again.
+The backend answers 401 too, as Problem Details, when it cannot confirm the token. On a 401 from either, the frontend reloads the page one time, so that Cloudflare Access can sign the staff member in again. If the first API call after that reload is also answered 401, the frontend does not reload again until an API call has succeeded: it shows the backend's error when the 401 is Problem Details, and otherwise asks the staff member to sign in again.
 
 Why one time: a wrong setting can make the backend answer 401 while Cloudflare Access still sees a signed-in person, and a reload on every 401 would then never stop.
 

@@ -38,6 +38,9 @@ The Access application for the staff address is the first of the two boundaries 
 1. It covers the whole address, with no path left out and no policy that lets a request through without a sign-in. The frontend's files are protected like the API.
 2. Google is its only sign-in method.
 3. Its policy admits the one staff email, the same one that the backend is configured with (`docs/briefs/002-staff-access-control.md`, part 3).
+4. Its cookie setting "HttpOnly" is on, so that no script in the page can read the token. The frontend never needs it (`FE-004`).
+5. It has no CORS settings, and it does not pass `OPTIONS` requests on to the origin. Either would let another website send the header that the backend requires.
+6. Its audience tag, which Cloudflare shows on the application's page, is the value of `MINIOASIS_CLOUDFLARE_ACCESS_AUDIENCE`.
 
 ### For production
 

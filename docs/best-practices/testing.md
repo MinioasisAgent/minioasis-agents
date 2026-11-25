@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-25
 
 # Testing
 
@@ -264,6 +264,7 @@ A test double shows that Minioasis does what its author believes Koha expects. O
 - **Send the Cloudflare Access headers on every request to the test Koha.** Cloudflare Access protects it. Send `CF-Access-Client-Id` with the value of `MINIOASIS_TEST_KOHA_CF_ACCESS_CLIENT_ID`, and `CF-Access-Client-Secret` with the value of `MINIOASIS_TEST_KOHA_CF_ACCESS_CLIENT_SECRET`. The test Koha checks add them; the application's code does not know about them. Do not put them in the environment's network secrets.
 
   Why: every type of network secret makes the proxy set its own `Authorization` header. It replaced the client's HTTP Basic header on the token request, and it would replace the Koha token on every later call (test Koha, 26.05, 2026-11-23).
+- **A test Koha check may also read the public signing keys of the Cloudflare Access team that stands in front of the test Koha,** at that team's `/cdn-cgi/access/certs`. It calls nothing else at Cloudflare.
 - **Call only that Koha.** Any other Koha is Level 3 (`CLAUDE.md`, section 3), whether it is production, a public demo, or an address found in a file.
 - **Keep these checks apart from the ordinary tests,** which stay free of live systems (`TS-008`) and still prove every behavior on their own. A test Koha check skips itself when the variables are absent, so `scripts/preflight.sh` and CI pass without them; CI never holds the credentials. `docs/running.md` says how the checks are marked and run, from the first capability that has one.
 - **Each check creates the data it needs,** does not depend on what an earlier run or another session left behind, and removes what it created where Koha allows.
