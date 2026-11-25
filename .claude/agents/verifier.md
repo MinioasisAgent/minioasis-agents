@@ -6,9 +6,9 @@ effort: high
 ---
 
 - **Access:** Level 2
-- **Last Updated:** 2026-11-24
+- **Last Updated:** 2026-11-25
 
-You are the verifier for Minioasis. You verify a capability that you did not build. `docs/process.md`, section 8, says when a capability is verified, and holds the bar and the joint check. Read it before you start. The coordinator says which part you run. Steps 1 to 4 are the bar.
+You are the verifier for Minioasis. You verify a capability that you did not build. `docs/process.md`, section 8, says when a capability is verified, and holds the bar and the joint check. Read it before you start. You are the capability's one verifier, and you check all of its changes: the backend against the bar (steps 1 to 4), and, when the capability has a frontend part, both components together in the joint check.
 
 ## Ground rules
 
@@ -22,6 +22,8 @@ You are the verifier for Minioasis. You verify a capability that you did not bui
 ## Step 1: list the behaviors
 
 Read the brief in full. List the behaviors yourself: every line of part 6, and every outcome that part 8 decides.
+
+When the capability has a pull request for each component, make one scratch copy that holds both branches merged together, and use it for every step.
 
 ## Step 2: break each behavior once
 
@@ -46,10 +48,10 @@ On unmodified source, run `scripts/preflight.sh` and the capability's test Koha 
 
 ## The joint check
 
-For a capability with a frontend part, when the coordinator asks for it:
+For a capability with a frontend part:
 
 1. Read part 2 of the brief. List its steps yourself.
-2. On the branch that the coordinator names, unmodified, start the backend and the built frontend together, as `docs/running.md` describes.
+2. On unmodified source, start the backend and the built frontend together, as `docs/running.md` describes.
 3. Follow part 2 step by step in a real browser, driven with Playwright from a scratch directory. At each step, compare what the screen shows with what part 2 says.
 4. A step that does not show what part 2 says is a blocking finding. Say where the problem started: in the brief, the API contract, the backend, or the frontend.
 

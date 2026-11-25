@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-24
+- **Last Updated:** 2026-11-25
 
 # Process
 
@@ -190,12 +190,18 @@ Every pull request is checked by a new session before it merges. The one excepti
 
 ## 8. Verify
 
-Every capability is verified one time, after its code is written and reviewed. A brief is never verified. A brief is checked (section 4). The verification has two parts:
+Every capability is verified one time, by one `verifier` session that checks all of its changes. A brief is never verified. A brief is checked (section 4).
 
-| Part | For | When |
-| --- | --- | --- |
-| The bar | The backend | After the review of the backend's last pull request found no blocking issue, and before that pull request merges |
-| The joint check | A capability with a frontend part | After both components passed their reviews, and before the last of their pull requests merges. It runs on that pull request's branch with the latest `master` merged in. |
+**When.** After the review of each component's last pull request found no blocking issue, and before either of those pull requests merges. For a capability with two components, the verifier works in a scratch copy that holds both branches merged together.
+
+The verification has two parts:
+
+| Part | For |
+| --- | --- |
+| The bar | The backend's behaviors |
+| The joint check | Both components together, for a capability with a frontend part |
+
+Why one session: it reads the brief and the code once, it reports once, and the capability has one moment at which it is verified. The backend's pull request waits for the frontend's review, which costs little, because the capability is not finished until both have merged.
 
 Why: the verification is cheap for what it shows. It breaks each stated behavior in turn and sees whether a test fails. The reviewer does not do this work (section 7, rule 4), so the check has one owner.
 
@@ -265,7 +271,7 @@ A **round** is one pass of the work followed by its check.
 | --- | --- | --- |
 | **Brief** | The coordinator writes or changes the brief, and a new `reviewer` runs the brief check. | Two rounds per brief, the first included |
 | **Review** | A coder writes or fixes one pull request, and a new `reviewer` reviews it. | Three rounds per pull request, or fewer if a round does not reduce the blocking findings |
-| **Verification** | A new `verifier` checks the capability. Before a second round, a coder fixes the findings and a new `reviewer` reviews the fix. That review counts as a round of the pull request's review. The second round re-checks only what the fix could affect. | Two rounds per capability, counted for each part of the verification |
+| **Verification** | A new `verifier` checks the capability. Before a second round, a coder fixes the findings and a new `reviewer` reviews the fix. That review counts as a round of the pull request's review. The second round re-checks only what the fix could affect. | Two rounds per capability |
 
 The limits count the agents' own rounds. A revision that the maintainer asks for when accepting a brief does not count.
 
@@ -337,7 +343,7 @@ An agent may merge its own Level 1 pull request only when all of these hold:
 4. Every test Koha check that applies ran and passed (section 13). If one could not run, the pull request is Level 2, because it would merge with a check left out (`CLAUDE.md`, section 3, item 5). Label it `needs-human`, and say which check and why.
 
    Why: without this, a capability could again be built on a belief about Koha that nothing has tested.
-5. The part of the verification that section 8 requires before this pull request merges has passed.
+5. For the last pull request of each component: the verification passed (section 8).
 6. `docs/STATE.md` and `docs/ROADMAP.md` are updated where their content changed.
 
 Merge with **squash**, then delete the task branch. The one exception is a production sync, which merges with a merge commit (`docs/transfer.md`, section 4).
