@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-24
+- **Last Updated:** 2026-11-25
 
 # Frontend
 
@@ -39,6 +39,7 @@ The backend owns every library rule and every check of one (`CLAUDE.md`, section
 
 - The frontend may refuse to send a form whose required field is empty. It makes no other check of its own.
 - It shows the backend's error text as the backend returns it.
+- Everything it shows is in English. It holds no translations and no language setting.
 - It never calls Koha, and it holds no secret.
 
 ```tsx
@@ -90,7 +91,7 @@ GOOD: browser ──► nginx ──► static files
 
 With one address, the browser needs no cross-origin permission, the backend needs no CORS setting, and the frontend never handles a token.
 
-How a request travels in production. Steps 5 and 6 hold once staff access control is built (`docs/ROADMAP.md`).
+How a request travels in production. The backend's part of step 6 holds once staff access control is built (`docs/ROADMAP.md`).
 
 1. The staff member's browser opens the Minioasis address over HTTPS. Cloudflare Access signs the staff member in before anything reaches the server.
 2. Cloudflare Tunnel passes each request to nginx. Nginx listens on localhost only.
@@ -100,7 +101,7 @@ How a request travels in production. Steps 5 and 6 hold once staff access contro
 6. The backend listens on localhost only. It validates the token itself on every request, does the work, and answers in JSON.
 7. The answer returns through nginx and Cloudflare to the browser, and React updates the screen.
 
-When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call. By Cloudflare's documentation, Access then answers 401; the brief for staff access control confirms it on the real setup. On a 401 the frontend asks the staff member to reload the page. It does not report a backend error.
+When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call. By Cloudflare's documentation, Access then answers 401; the brief for staff access control confirms it on the real setup. On a 401 that is not the backend's Problem Details, the frontend asks the staff member to reload the page. A 401 from the backend is shown like any other backend error. The brief for staff access control says whether the backend ever answers 401.
 
 In development, Vite's development server takes the place of nginx and passes `/api/` to the backend.
 
@@ -171,7 +172,7 @@ test("shows the barcode", () => {
 });
 
 // GOOD: logic that the frontend owns has a test
-test("formats a due date in the staff member's locale", () => {
-  expect(formatDueDate("2026-12-01", "en-GB")).toBe("1 December 2026");
+test("formats a due date for staff", () => {
+  expect(formatDueDate("2026-12-01")).toBe("1 December 2026");
 });
 ```

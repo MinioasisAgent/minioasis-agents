@@ -77,8 +77,8 @@ Keep the brief short enough to read in one sitting, about three pages. If it gro
 | 3. The API | The routes, and for each the operation in the API contract. Error codes, and the text staff see. Who may call it. Which patron data is returned. |
 | 4. Decisions | Each decision with who made it and why. What still needs the maintainer's decision. What the author is least sure of. |
 | 5. Not included | What the capability deliberately leaves out. |
-| 6. Behaviors that must have a test | One numbered line each, including what the system must never do. |
-| 7. How it will be built | The approach, every new package with its version and reason, and the files, by component and project. |
+| 6. Behaviors that must have a test | The backend's behaviors, one numbered line each, including what the system must never do. The frontend is held to part 2 (section 8, `FE-006`). |
+| 7. How it will be built | The approach, every new package with its reason, and the files, by component and project. A backend package is listed with its version. A frontend package's version is written only in `web/package.json` (`FE-001`). |
 | 8. Failure and retry | Only for a capability that changes data in Koha. |
 
 **The API contract.** One OpenAPI file, `contracts/minioasis.openapi.json`, holds every route of the API with its request, its response fields, and its status codes. A brief that adds or changes a part of the API changes that file in the brief's own pull request, so that one acceptance covers both. Part 3 names each route and says what each status means to staff. It does not repeat the fields. Both coders build from the file, and neither changes it (section 6).
@@ -229,7 +229,7 @@ The verifier lists the behaviors itself, from the words of the brief. The author
 
 > Every step in part 2 of the brief shows, in a real browser, what part 2 says.
 
-The verifier starts the backend and the built frontend together, as `docs/running.md` describes, and follows part 2 step by step in a browser that it drives with Playwright. Playwright is the verifier's own tool and not a dependency of the repository.
+The verifier starts the backend and the built frontend together, as `docs/running.md` describes, and follows part 2 step by step in a browser that it drives with Playwright. Playwright is the verifier's own tool and not a dependency of the repository. The application sends no Cloudflare Access headers, so the backend reaches the test Koha (`TS-013`) through a helper program that adds them. The helper is kept outside the repository, and `MINIOASIS_KOHA_BASE_URL` points at it on `localhost`. The coordinator gives the verifier the helper.
 
 - A step that does not show what part 2 says is a **blocking** finding. The verifier says where the problem started: in the brief, the API contract, the backend, or the frontend.
 - Anything else is **non-blocking**.
@@ -362,7 +362,7 @@ Before you commit, run every check that applies to the files you changed.
 | A Koha contract or the generator configuration | Regenerate the affected client (`EX-003`), inspect the generated diff, then run the C# check |
 | The solution file only | `dotnet sln minioasis.slnx list` shows every project |
 | Dockerfile or Compose | `docker compose config` and `docker compose build`, when Docker is available |
-| Documentation or the rulebook | `git diff --check`. Every path, rule ID, and command you mention exists. Each changed document's header is current (section 14). Read the final diff. |
+| Documentation or the rulebook | `git diff --check`. Every rule ID and command you mention exists. Every path you mention exists, or `docs/STATE.md` says that it is not built yet. Each changed document's header is current (section 14). Read the final diff. |
 
 The preflight script runs restore, formatting, the tests, and the publish build. It stops at the first failure. CI runs it on every pull request. While the repository holds no .NET code, it reports that there is nothing to check.
 

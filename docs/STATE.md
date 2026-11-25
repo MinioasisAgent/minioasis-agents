@@ -1,5 +1,5 @@
 - **Access:** Level 1
-- **Last Updated:** 2026-11-24
+- **Last Updated:** 2026-11-25
 
 # State
 
@@ -30,11 +30,10 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 - The test framework, xUnit v3 (`xunit.v3.mtp-off`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`), accepted by merging the foundation pull request.
 
 - The frontend (2026-11-24): a single-page application in `web/`, served by nginx, and built by its own coder from the API contract (`CLAUDE.md`, section 1, and `docs/best-practices/frontend.md`). None of it is built. `backend/`, `web/`, and `contracts/minioasis.openapi.json` do not exist yet, and the joint check (`docs/process.md`, section 8) cannot run until the frontend foundation exists (`docs/ROADMAP.md`).
+- The production path (2026-11-24): browser, Cloudflare Access, Cloudflare Tunnel, nginx on localhost, backend on localhost (`FE-004`).
+- The joint check and the test Koha (2026-11-25): nothing in the application's code sends the Cloudflare Access headers. For the joint check, the backend reaches the test Koha through a helper program that is kept outside the repository and adds them (`docs/process.md`, section 8). It worked with plain requests on 2026-11-25. With the running backend behind it, it is not shown.
 
 ## Open questions for the maintainer
-
-- **How the joint check's backend reaches a Koha.** The application sends no Cloudflare Access headers, so a running backend cannot reach the test Koha, and any other Koha is Level 3. Until this is decided, the joint check cannot run.
-- **Whether Cloudflare Tunnel in front of nginx is the real deployment** (`FE-004`).
 
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
 - **Whether get item is transferred to production before staff access control (brief 002) is built.**

@@ -1,5 +1,5 @@
 - **Access:** Level 1 <!-- For the copy: Level 2 once approved (`docs/process.md`, section 3). This template itself is Level 2. -->
-- **Last Updated:** <date> <!-- Template last updated: 2026-11-24 -->
+- **Last Updated:** <date> <!-- Template last updated: 2026-11-25 -->
 
 # <NNN> — <Capability name>
 
@@ -63,7 +63,7 @@
 
 ## 6. Behaviors that must have a test
 
-<One line each, numbered and never renumbered. Include what the system must never do. Mark the checks that run against the test Koha (`TS-013`).>
+<The backend's behaviors. One line each, numbered and never renumbered. Include what the system must never do. The frontend is held to part 2. Mark the checks that run against the test Koha (`TS-013`).>
 
 1. …
 
@@ -71,7 +71,7 @@
 
 <The approach in a few sentences: how the capability fits `docs/best-practices/architecture.md`.>
 
-| Component and project | Package | Version | Why |
+| Component and project | Package | Version (backend only) | Why |
 | --- | --- | --- | --- |
 | | | | |
 
