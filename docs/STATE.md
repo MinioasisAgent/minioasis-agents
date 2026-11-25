@@ -13,11 +13,11 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## What exists
 
-- **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), which the maintainer supplied on 2026-11-23 as the contract of Koha 26.05, and the pinned NSwag client generator (`dotnet-tools.json`, `nswag.json`).
-- **The foundation:** `minioasis.slnx` and the three projects of `AR-001` (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`), and a `.Tests` project for each (`TS-004`), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
+- **The rulebook,** and the starting configuration: `.editorconfig`, `.gitattributes`, `.gitignore`, the official Koha contract (`contracts/official_koha_openapi.json`), which the maintainer supplied on 2026-11-23 as the contract of Koha 26.05, and the pinned NSwag client generator (`backend/dotnet-tools.json`, `backend/nswag.json`).
+- **The foundation,** in `backend/` since 2026-11-25: `minioasis.slnx` and the three projects of `AR-001` (`Minioasis.Application`, `Minioasis.Api`, `Minioasis.Koha`), and a `.Tests` project for each (`TS-004`), with the test framework xUnit v3. `scripts/preflight.sh` runs on them. How to build, test, and run is in `docs/running.md`.
 - **Brief 001 (`built`, reviewed and verified on 2026-11-23):**
   - `GET /api/v1/items/{id}`, which returns an item's identifiers, barcode, and call number.
-  - The API error contract: Problem Details with `code` and `traceId`, masked server failures, `not_found` and `method_not_allowed`, the errors of HTTP itself that Api defines, the message file `Minioasis.Api/Resources/errors.en.json`, and its startup check.
+  - The API error contract: Problem Details with `code` and `traceId`, masked server failures, `not_found` and `method_not_allowed`, the errors of HTTP itself that Api defines, the message file `backend/Minioasis.Api/Resources/errors.en.json`, and its startup check.
   - The connection to Koha: the three `MINIOASIS_KOHA_*` settings and their startup check, the client-credentials token provider, the deadline, bearer, and charset handlers, and the focused contracts `contracts/oauth.openapi.json` and `contracts/items.openapi.json` with their generated clients.
   - The test Koha checks for behaviors 1, 5, 8, 12, 14, and 26 (`Category=TestKoha`).
 
@@ -29,7 +29,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 - The test framework, xUnit v3 (`xunit.v3.mtp-off`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`), accepted by merging the foundation pull request.
 
-- The frontend (2026-11-24): a single-page application in `web/`, served by nginx, and built by its own coder from the API contract (`CLAUDE.md`, section 1, and `docs/best-practices/frontend.md`). None of it is built. `backend/`, `web/`, and `contracts/minioasis.openapi.json` do not exist yet, and the joint check (`docs/process.md`, section 8) cannot run until the frontend foundation exists (`docs/ROADMAP.md`).
+- The frontend (2026-11-24): a single-page application in `web/`, served by nginx, and built by its own coder from the API contract (`CLAUDE.md`, section 1, and `docs/best-practices/frontend.md`). None of it is built. `web/` and `contracts/minioasis.openapi.json` do not exist yet, and the joint check (`docs/process.md`, section 8) cannot run until the frontend foundation exists (`docs/ROADMAP.md`).
 - The production path (2026-11-24): browser, Cloudflare Access, Cloudflare Tunnel, nginx on localhost, backend on localhost (`FE-004`).
 - The joint check and the test Koha (2026-11-25): nothing in the application's code sends the Cloudflare Access headers. For the joint check, the backend reaches the test Koha through a helper program that is kept outside the repository and adds them (`docs/process.md`, section 8). It worked with plain requests on 2026-11-25. With the running backend behind it, it is not shown.
 

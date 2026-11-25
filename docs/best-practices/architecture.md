@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-25
 
 # Architecture and naming
 
@@ -21,7 +21,7 @@ The three projects separate what the application does, how it is offered over HT
 | The HTTP status and message for "loan not found" | `Minioasis.Api` |
 | The Koha path and JSON for a renewal | `Minioasis.Koha` |
 
-The projects stay at the repository root. A new project or layer is a structural change and needs the maintainer's acceptance.
+The projects stay in `backend/`, next to the solution file. A new project or layer is a structural change and needs the maintainer's acceptance.
 
 ---
 

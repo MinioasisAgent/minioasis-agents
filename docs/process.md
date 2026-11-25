@@ -360,7 +360,7 @@ Before you commit, run every check that applies to the files you changed.
 | C# code or a project file | `scripts/preflight.sh` (`scripts/preflight.ps1` on Windows) |
 | Code or a test whose brief marks a behavior for the test Koha | Also the test Koha checks (`TS-013`), run as `docs/running.md` describes. Report "test Koha: passed", "failed", or "not run" with the reason. A failure blocks the merge. A check that could not run makes the pull request Level 2 (section 12). |
 | A Koha contract or the generator configuration | Regenerate the affected client (`EX-003`), inspect the generated diff, then run the C# check |
-| The solution file only | `dotnet sln minioasis.slnx list` shows every project |
+| The solution file only | `dotnet sln backend/minioasis.slnx list` shows every project |
 | Dockerfile or Compose | `docker compose config` and `docker compose build`, when Docker is available |
 | Documentation or the rulebook | `git diff --check`. Every rule ID and command you mention exists. Every path you mention exists, or `docs/STATE.md` says that it is not built yet. Each changed document's header is current (section 14). Read the final diff. |
 

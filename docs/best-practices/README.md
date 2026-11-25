@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-24
+- **Last Updated:** 2026-11-25
 
 # Best practices
 
@@ -28,6 +28,8 @@ How code and tests are written in Minioasis. Every rule applies to every capabil
 | `contracts/minioasis.openapi.json` | `errors.md`, and `FE-005` |
 
 When unsure whether a file applies, include it. Read the files before you write. A review reports every rule in them that the change breaks (`.claude/agents/reviewer.md`). Cite a rule by its ID, for example "`CD-002`: the adapter validates caller input".
+
+A path that starts with `Minioasis.` is inside `backend/`, here and in every rule file.
 
 ## Existing code
 

@@ -15,7 +15,7 @@ It has two components. They share one thing: the API contract (`docs/process.md`
 
 | Component | Folder | Built with | Owns |
 | --- | --- | --- | --- |
-| Backend | `backend/`, once the backend has moved there (`docs/ROADMAP.md`). Until then, the repository root. | C# on .NET 10 | Staff authentication and authorization, the library's rules and every check of them, and every call to Koha |
+| Backend | `backend/` | C# on .NET 10 | Staff authentication and authorization, the library's rules and every check of them, and every call to Koha |
 | Frontend | `web/` | React and TypeScript, as a single-page application that runs in the browser (`FE-001`) | What staff see and do, and the calls to the backend's API |
 
 The frontend holds no library rule (`FE-002`). Nginx serves it, and passes its API calls to the backend (`FE-004`).
