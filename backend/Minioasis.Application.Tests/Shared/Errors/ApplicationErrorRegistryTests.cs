@@ -1,5 +1,6 @@
 using Minioasis.Application.Shared.Errors;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace Minioasis.Application.Tests.Shared.Errors;
@@ -7,21 +8,50 @@ namespace Minioasis.Application.Tests.Shared.Errors;
 public sealed class ApplicationErrorRegistryTests
 {
     [Fact]
-    public void The_default_registry_holds_every_declared_definition_exactly_once()
+    public void Discover_collects_only_the_readonly_static_fields_of_marked_groups()
     {
-        var declared = typeof(ApplicationErrorRegistry).Assembly
+        var registry = ApplicationErrorRegistry.Discover([typeof(MarkedGroup), typeof(UnmarkedGroup)]);
+
+        Assert.Equal(
+            ["marked.first", "marked.second"],
+            registry.Definitions.Select(definition => definition!.Code).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void The_default_registry_holds_every_definition_the_application_declares_exactly_once()
+    {
+        const BindingFlags AnyStatic =
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var declaringMembers = typeof(ApplicationErrorRegistry).Assembly
             .GetTypes()
-            .Where(type => type.Name.EndsWith("ErrorDefinitions", StringComparison.Ordinal))
-            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
-            .Where(field => field.FieldType == typeof(ApplicationErrorDefinition))
+            .Where(type => !type.IsDefined(typeof(CompilerGeneratedAttribute), false))
+            .SelectMany(type => type.GetFields(AnyStatic)
+                .Where(field => !field.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                .Where(field => field.FieldType == typeof(ApplicationErrorDefinition))
+                .Cast<MemberInfo>()
+                .Concat(type.GetProperties(AnyStatic)
+                    .Where(property => property.PropertyType == typeof(ApplicationErrorDefinition))))
+            .ToList();
+
+        Assert.Empty(declaringMembers
+            .Select(member => member.DeclaringType!)
+            .Where(type => !type.IsDefined(typeof(ErrorDefinitionsAttribute), false))
+            .Select(type => type.FullName)
+            .Distinct());
+        Assert.Empty(declaringMembers
+            .Where(member => member is not FieldInfo { IsPublic: true, IsStatic: true, IsInitOnly: true })
+            .Select(member => $"{member.DeclaringType!.FullName}.{member.Name}"));
+
+        var declared = declaringMembers
+            .Cast<FieldInfo>()
             .Select(field => (ApplicationErrorDefinition)field.GetValue(null)!)
             .ToList();
 
         Assert.NotEmpty(declared);
-        Assert.Equal(
-            declared.Select(definition => definition.Code).Order(StringComparer.Ordinal),
-            ApplicationErrorRegistry.Default.Definitions.Select(definition => definition!.Code)
-                .Order(StringComparer.Ordinal));
+        Assert.Equal(declared.Count, ApplicationErrorRegistry.Default.Definitions.Count);
+        Assert.All(declared, definition => Assert.Single(
+            ApplicationErrorRegistry.Default.Definitions,
+            registered => ReferenceEquals(registered, definition)));
     }
 
     [Fact]
@@ -69,5 +99,29 @@ public sealed class ApplicationErrorRegistryTests
                 nameof(ApplicationErrorCategory.Unexpected),
             ],
             Enum.GetNames<ApplicationErrorCategory>());
+    }
+
+    [ErrorDefinitions]
+    private static class MarkedGroup
+    {
+        public static readonly ApplicationErrorDefinition First =
+            new("marked.first", ApplicationErrorCategory.Validation);
+
+        public static readonly ApplicationErrorDefinition Second =
+            new("marked.second", ApplicationErrorCategory.Unexpected);
+
+        public static ApplicationErrorDefinition NotReadonly =
+            new("marked.not_readonly", ApplicationErrorCategory.Validation);
+
+        public static ApplicationErrorDefinition Property
+        {
+            get;
+        } = new("marked.property", ApplicationErrorCategory.Validation);
+    }
+
+    private static class UnmarkedGroup
+    {
+        public static readonly ApplicationErrorDefinition Unmarked =
+            new("unmarked.field", ApplicationErrorCategory.Validation);
     }
 }
