@@ -1,5 +1,4 @@
 using Minioasis.Application.Shared.Errors;
-using System.Reflection;
 using Xunit;
 
 namespace Minioasis.Application.Tests.Shared.Errors;
@@ -7,21 +6,13 @@ namespace Minioasis.Application.Tests.Shared.Errors;
 public sealed class ApplicationErrorRegistryTests
 {
     [Fact]
-    public void The_default_registry_holds_every_declared_definition_exactly_once()
+    public void Discover_collects_only_the_readonly_static_fields_of_marked_groups()
     {
-        var declared = typeof(ApplicationErrorRegistry).Assembly
-            .GetTypes()
-            .Where(type => type.Name.EndsWith("ErrorDefinitions", StringComparison.Ordinal))
-            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
-            .Where(field => field.FieldType == typeof(ApplicationErrorDefinition))
-            .Select(field => (ApplicationErrorDefinition)field.GetValue(null)!)
-            .ToList();
+        var registry = ApplicationErrorRegistry.Discover([typeof(MarkedGroup), typeof(UnmarkedGroup)]);
 
-        Assert.NotEmpty(declared);
         Assert.Equal(
-            declared.Select(definition => definition.Code).Order(StringComparer.Ordinal),
-            ApplicationErrorRegistry.Default.Definitions.Select(definition => definition!.Code)
-                .Order(StringComparer.Ordinal));
+            ["marked.first", "marked.second"],
+            registry.Definitions.Select(definition => definition!.Code).Order(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -69,5 +60,29 @@ public sealed class ApplicationErrorRegistryTests
                 nameof(ApplicationErrorCategory.Unexpected),
             ],
             Enum.GetNames<ApplicationErrorCategory>());
+    }
+
+    [ErrorDefinitions]
+    private static class MarkedGroup
+    {
+        public static readonly ApplicationErrorDefinition First =
+            new("marked.first", ApplicationErrorCategory.Validation);
+
+        public static readonly ApplicationErrorDefinition Second =
+            new("marked.second", ApplicationErrorCategory.Unexpected);
+
+        public static ApplicationErrorDefinition NotReadonly =
+            new("marked.not_readonly", ApplicationErrorCategory.Validation);
+
+        public static ApplicationErrorDefinition Property
+        {
+            get;
+        } = new("marked.property", ApplicationErrorCategory.Validation);
+    }
+
+    private static class UnmarkedGroup
+    {
+        public static readonly ApplicationErrorDefinition Unmarked =
+            new("unmarked.field", ApplicationErrorCategory.Validation);
     }
 }

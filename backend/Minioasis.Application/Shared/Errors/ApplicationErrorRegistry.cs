@@ -1,4 +1,4 @@
-using Minioasis.Application.Items.Errors;
+using System.Reflection;
 
 namespace Minioasis.Application.Shared.Errors;
 
@@ -11,18 +11,22 @@ public sealed class ApplicationErrorRegistry(IReadOnlyList<ApplicationErrorDefin
     public static ApplicationErrorRegistry Default
     {
         get;
-    } = new(
-    [
-        ItemErrorDefinitions.InvalidIdentifier,
-        ItemErrorDefinitions.NotFound,
-        KohaErrorDefinitions.AuthenticationFailed,
-        KohaErrorDefinitions.InvalidResponse,
-        KohaErrorDefinitions.Unavailable,
-        SystemErrorDefinitions.Unexpected,
-    ]);
+    } = Discover(typeof(ApplicationErrorRegistry).Assembly.DefinedTypes);
 
     /// <summary>
     /// The definitions as they were registered. Null entries are kept, so that the startup check can reject them.
     /// </summary>
     public IReadOnlyList<ApplicationErrorDefinition?> Definitions { get; } = definitions;
+
+    /// <summary>
+    /// Collects the public static readonly definition fields of every type marked with
+    /// <see cref="ErrorDefinitionsAttribute"/>. It only collects: the startup check validates what it finds.
+    /// </summary>
+    internal static ApplicationErrorRegistry Discover(IEnumerable<Type> types) =>
+        new(types
+            .Where(type => type.IsDefined(typeof(ErrorDefinitionsAttribute), false))
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly))
+            .Where(field => field.IsInitOnly && field.FieldType == typeof(ApplicationErrorDefinition))
+            .Select(field => (ApplicationErrorDefinition?)field.GetValue(null))
+            .ToList());
 }

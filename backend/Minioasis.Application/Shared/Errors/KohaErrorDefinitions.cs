@@ -4,6 +4,7 @@ namespace Minioasis.Application.Shared.Errors;
 /// The three failures of the connection to Koha. Every capability that calls Koha uses these; they are
 /// logged only, never shown to a client.
 /// </summary>
+[ErrorDefinitions]
 public static class KohaErrorDefinitions
 {
     public static readonly ApplicationErrorDefinition AuthenticationFailed =

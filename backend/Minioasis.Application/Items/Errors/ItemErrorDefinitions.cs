@@ -2,6 +2,7 @@ using Minioasis.Application.Shared.Errors;
 
 namespace Minioasis.Application.Items.Errors;
 
+[ErrorDefinitions]
 public static class ItemErrorDefinitions
 {
     public static readonly ApplicationErrorDefinition InvalidIdentifier =
