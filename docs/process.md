@@ -199,7 +199,7 @@ Every capability is verified one time. In each round (section 10), one `verifier
 | The capability changes | The verifier runs | On |
 | --- | --- | --- |
 | The backend only | The bar | The backend's branch |
-| The frontend only | The joint check | The frontend's branch, with the backend that is already on `master` |
+| The frontend only | The joint check | The frontend's branch, with the backend that is already on `master`. When no step of part 2 calls the API, such as a layout or navigation without data, the frontend runs alone, without a backend. |
 | Both | The bar, then the joint check | A scratch copy that holds the latest `master` and both branches merged together |
 
 Why one session: it reads the brief and the code once, it reports once, and the capability has one moment at which it is verified. The backend's pull request waits for the frontend's review, which costs little, because the capability is not finished until both have merged.

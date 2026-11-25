@@ -54,7 +54,7 @@ On unmodified source, run `scripts/preflight.sh` and the capability's test Koha 
 
 ## The joint check
 
-For a capability that changes the frontend. When it changes the frontend only, the backend is the one already on `master`.
+For a capability that changes the frontend. When it changes the frontend only, the backend is the one already on `master`. When no step of part 2 calls the API, start the built frontend alone, without a backend, in step 2.
 
 1. Read part 2 of the brief. List its steps yourself.
 2. On unmodified source, start the backend and the built frontend together, as `docs/running.md` describes.
