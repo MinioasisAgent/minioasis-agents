@@ -19,24 +19,22 @@ This capability has no screen. The steps describe a client of the API.
 
 1. The staff member is signed in through Cloudflare Access with the Google account. The frontend calls `GET /api/v1/items/12` with the header `X-Requested-With: XMLHttpRequest`, as it does on every call (`FE-004`). Cloudflare adds the header `Cf-Access-Jwt-Assertion`, and nginx passes it on unchanged.
 2. The backend validates that token, and answers as brief 001 says.
-3. If the token is missing, expired, or not valid for this application, the client gets 401 "Sign-in required". Nothing else is done, and Koha is not called. What the frontend does on a 401 is written in `FE-004`, not here.
+3. If the token is missing, expired, or not valid for this application, the client gets 401 "Sign-in required". Nothing else is done, and Koha is not called. The answer is the same when the backend cannot get Cloudflare's signing keys, because it can then confirm no token; the log holds the cause. What the frontend does on a 401 is written in `FE-004`, not here.
 4. If the token is valid but its email is not the configured one, the client gets 403 "Access denied". The frontend shows it like any other error.
 5. If the token and the email are right but `X-Requested-With` is missing or has another value, the client gets 403 "Request refused". The Minioasis frontend never causes this. It is a request that another website made the browser send.
-6. If the backend needs Cloudflare's signing keys to decide and cannot get them, the client gets "Internal error" with a `traceId`, and the log holds the cause.
-7. Steps 3 to 6 apply to every path, including one that matches no route. A caller without a valid token never learns which routes exist.
+6. Steps 3 to 5 apply to every path, including one that matches no route. A caller without a valid token never learns which routes exist.
 
 ## 3. The API
 
-No route is added. Every route, present and future, gets the four answers below.
+No route is added. Every route, present and future, gets the three answers below.
 
 | Situation | HTTP status | Public code | Title / detail shown to staff |
 | --- | --- | --- | --- |
 | The token is missing or fails a check below | 401 | `unauthenticated` | "Sign-in required" / "Your sign-in could not be confirmed." With the header `WWW-Authenticate: CloudflareAccess`, exactly that value. |
 | The token is valid, and its email is not the configured one | 403 | `access_denied` | "Access denied" / "This account may not use Minioasis." |
 | The token and the email are right, and `X-Requested-With` is not exactly `XMLHttpRequest` | 403 | `request_refused` | "Request refused" / "This request did not come from Minioasis." |
-| The backend must fetch the signing keys to decide (see "The keys"), and the fetch fails | 503 | `internal_error` | "Internal error", no detail (`ER-006`) |
 
-All four are Problem Details in the shape of brief 001. The 401 never says which check failed.
+All three are Problem Details in the shape of brief 001. The 401 never says which check failed.
 
 **The checks on the token.** It is read only from the header `Cf-Access-Jwt-Assertion`. It is valid when all of these hold:
 
@@ -48,16 +46,11 @@ All four are Problem Details in the shape of brief 001. The 401 never says which
 
 Then the email: the token's `email` must equal the configured email, compared without regard to letter case. A token without an `email`, such as a service token's, is refused with the 403.
 
-**The keys.** The backend holds the keys it last fetched, in memory. A token that is not a JWT, or whose header does not name `RS256`, gets the 401 without any fetch. For every other token:
-
-- A fetch is needed when the backend holds no keys, or when the token names a key that it does not hold.
-- A needed fetch is made only when the last fetch started more than 60 seconds ago, or none was ever made. Otherwise no fetch is made: the answer is the 503 when no keys are held, and the 401 when the key is not among the held ones.
-- The request that needs the fetch waits for it and is decided with the fetched keys, which replace the held ones. Requests that need a fetch at the same moment share one. When one of them is cancelled, the fetch goes on for the others.
-- A fetch goes to `<team domain>/cdn-cgi/access/certs` and takes at most 10 seconds. It fails when the address cannot be reached, answers another status than 200, takes too long, or returns a body that is not a key set with at least one `RS256` key. Every request that waited for a failed fetch gets the 503, and the held keys stay.
+**The keys.** The library fetches the keys from `<team domain>/cdn-cgi/access/certs` on the first request, holds them, and refreshes them by itself. When a token names a key that is not held, the library fetches again and that request waits for the result, so the first request after Cloudflare changes its key is accepted. The library makes such a fetch at most once in 5 minutes, its default. While no keys can be fetched and none are held, every request gets the 401. When a refresh fails, the held keys stay in use.
 
 **Order.** The token is checked first, then the email, then `X-Requested-With`, then routing. So an unknown path without a token is 401, not 404.
 
-**Internal code, logged only:** `access.keys_unavailable`.
+**Internal codes, logged only:** none.
 
 **Configuration**
 
@@ -75,7 +68,7 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 
 - **Who may call it:** only a caller with a token that Cloudflare Access issued for this application to the configured email.
 - No patron data is involved.
-- **Logging.** A refused request logs the reason (missing, malformed, wrong algorithm, unknown key, bad signature, wrong issuer, wrong audience, wrong type, expired, not yet valid, wrong email, header missing) and the `traceId`. No log line and no response ever holds the token, its `email`, `sub`, `iss`, `aud`, or key name, or the configured email. An accepted request logs nothing about the person.
+- **Logging.** A refused request logs the reason and the `traceId`. For a refused token, the library's own log lines may hold its issuer, its audience, its key name, and its times. No log line and no response ever holds a whole token, an `email` from a token, or the configured email. An accepted request logs nothing about the person. A failed key fetch is logged with its cause.
 
 ## 4. Decisions
 
@@ -89,6 +82,7 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 | Nothing in the application's code exists only for a test setup. | "It shall not live in my repo." | 2026-11-25 |
 | The backend also checks that the token's email is exactly one configured email. The email is a setting, never in the repository. | Part of the second boundary: it holds even if the Access policy is wrong. | 2026-11-25 |
 | Everything runs in Docker, except Koha. The Compose file publishes the backend's port on `127.0.0.1` only. The backend itself does not check its listening address. | Inside a container the backend cannot listen on localhost and still be reached. | 2026-11-25 |
+| The library's log lines about a refused token may go into the log. | A refused token is meaningless. | 2026-11-25 |
 | On a 401 the frontend reloads the page by itself. | The person should not have to. | 2026-11-25 |
 | Agents may reach Cloudflare Access from cloud sessions. | So that a check can use Cloudflare's real keys. | 2026-11-25 |
 
@@ -103,12 +97,12 @@ If any of the three is missing, blank, or malformed, the application refuses to 
 | A refused token is 401, and a wrong email or a missing header is 403, both in Problem Details. The 401 carries `WWW-Authenticate: CloudflareAccess`. | 401 for all three. `WWW-Authenticate: Bearer`. | RFC 9110, sections 15.5.2 and 15.5.4: the person with a wrong email is known, and may not. A reload cannot help them, so the frontend must be able to tell the two apart. The RFC requires a challenge on a 401 that applies to the resource. `Bearer` (RFC 6750) tells a client to send the token in `Authorization`, which behavior 5 refuses. `CloudflareAccess` is a scheme name of our own and is not registered. RFC 9110, section 11.1, says a new scheme ought to be registered; this one is not, because it serves one private API and no registered scheme is true here. The header carries no parameters, so it never says which check failed. |
 | The email is compared without regard to letter case. | An exact comparison of every character. | A Google address means the same in any letter case. A setting typed with a capital letter must not lock the person out. |
 | The checks run before routing, on every path. | Only on matched routes, as the framework does by default. | An outsider learns nothing about the routes. Brief 001's `not_found` and `method_not_allowed` now need a valid token first. |
-| The keys are fetched as "The keys" in part 3 says: on the first request, and again when a token names a key that is not held, at most once every 60 seconds. The request waits for the fetch. | Fetch once, for a fixed period. Or the library's own refreshing. | Cloudflare's documentation, "Validate JWTs": the key changes every 6 weeks by default, and can be changed by hand at any time. The published list holds the current and the previous key, so the next key cannot be fetched ahead of time. The team's real key address returned two `RS256` keys on 2026-11-25. The library refreshes in the background and at most once in 5 minutes, so the person's first request after a key change would get 401, and so could every request for 5 minutes. The 60 seconds bound what a broken client, or a caller that got past Cloudflare Access, can make the backend send to Cloudflare. The second boundary exists for exactly that caller. |
-| When a fetch that a request waited for fails, the answer is a masked 503, not 401, also when older keys are held. | 401. | The token may be good, and the backend cannot tell. A 401 would make the frontend reload, which cannot help. Every kind of failed fetch, an unreadable body included, is the one outcome "unavailable", as `EX-013` does for the Koha token: the person can do nothing different for either. |
+| The library fetches and refreshes the keys, with its switch `Switch.Microsoft.IdentityModel.UpdateConfigAsBlocking` turned on, so that a request with a new key waits for the fetch. | Fetch once, for a fixed period. Or a key source of our own. | Cloudflare's documentation, "Validate JWTs": the key changes every 6 weeks by default, and can be changed by hand at any time, and the published list holds the current and the previous key, so the next key cannot be fetched ahead of time. The team's real key address returned two `RS256` keys on 2026-11-25. Source of `Microsoft.IdentityModel` 8.19.2, `ConfigurationManager.RequestRefresh`: without the switch the fetch runs in the background and the request with the new key is refused; with it the fetch blocks. The maintainer pointed to the switch, 2026-11-25. |
+| When the keys cannot be fetched and none are held, the answer is the 401. | A masked 503, which needs a key source of our own to tell "no keys" from "unknown key". | The library reports both as a token it cannot validate. The person reached the backend through Cloudflare, so Cloudflare is up; a backend that cannot fetch the keys is a setup fault, and the log names it. A 503 can be added later without breaking a client. |
 | Only `RS256` is accepted. | Whatever the token's header names. | A token must not choose its own algorithm (RFC 8725, section 3.1). Cloudflare's documentation and the real token of 2026-11-25 both show `RS256`. |
 | No bypass and no "development mode" in the application, and the team domain accepts only `https`. The tests answer the key fetch with a test double. The joint check uses a local stand-in for Cloudflare Access, kept outside the repository: it publishes its own key at `/cdn-cgi/access/certs` over `https` with a throwaway certificate, and signs tokens with that key. The backend is pointed at it with the three settings. | A setting that turns the check off. Or accepting `http` on localhost for the team domain, as the Koha address does. | One code path, which is the one production runs. A switch that turns the check off can be left on in production. `http` on localhost would exist only for the stand-in, against the maintainer's decision above; production's team domain is always `https`. |
-| This brief does not create `contracts/minioasis.openapi.json`. The frontend foundation creates it, with the 401, the two 403 answers, and the masked 503 of this brief on every route. | Create it in this brief's pull request, as `docs/process.md`, section 3, says. | The file does not exist, and nothing reads it until the frontend exists. `docs/ROADMAP.md` already gives it to the frontend foundation. This is an intended exception to that section, for the maintainer to accept with this brief. |
-| The token is validated with `Microsoft.IdentityModel.JsonWebTokens`, called from one piece of middleware of our own. | ASP.NET's JWT bearer authentication (`Microsoft.AspNetCore.Authentication.JwtBearer`), which uses the same library underneath. | The brief would have to work against that handler in three places: it refreshes keys in the background, so the request with a new key is refused; it logs the token's `iss` or key name when it refuses a token; and it adds error details to the challenge header. Read in the source of `Microsoft.IdentityModel` 8.19.2 and of ASP.NET 10. Calling the library directly keeps its checks of signature, issuer, audience, and lifetime, so none is written by hand. Raised by the second brief check. |
+| This brief does not create `contracts/minioasis.openapi.json`. The frontend foundation creates it, with the 401 and the two 403 answers of this brief on every route. | Create it in this brief's pull request, as `docs/process.md`, section 3, says. | The file does not exist, and nothing reads it until the frontend exists. `docs/ROADMAP.md` already gives it to the frontend foundation. This is an intended exception to that section, for the maintainer to accept with this brief. |
+| ASP.NET's JWT bearer authentication validates the token, with three settings away from its defaults: the blocking switch above, no error details in the challenge header, and the token read from the Cloudflare header. | Calling `Microsoft.IdentityModel.JsonWebTokens` directly with a key source of our own, as the second brief check suggested. | The handler is the standard way in ASP.NET and needs the least code of ours. Each of the three points that the checks raised against it has a setting. Its log lines for a refused token are accepted by the maintainer (2026-11-25): a refused token's issuer and key name are not secrets. |
 | The text of the three new messages, and the names of the three codes and the three settings. | None. | For the maintainer to accept with this brief (`ER-003`). All are one-way. |
 
 **Needs your decision**
@@ -118,7 +112,6 @@ None.
 **Least sure of**
 
 - **The joint check's stand-in over `https`.** The team domain accepts only `https`, so the stand-in needs a throwaway certificate that the backend's process is told to trust through the operating system's own settings. Nobody has run this yet. If it cannot work, the first joint check reports it, and the maintainer decides.
-- **Held keys do not expire by time.** A key that Cloudflare has withdrawn stays accepted until a token with an unknown key name causes the next fetch. In normal use that is the first request after the change.
 - **Behavior 16 needs Cloudflare to return the cookie to a service token.** It did on 2026-11-25. Cloudflare's setting "strict service token authentication" stops it, and is the default for newer organizations. If the check cannot get a token it is "not run", and the pull request waits for the maintainer.
 - **A person's real token.** The real token I inspected was a service token's, which has no `email`. That a person's token carries `email` as Cloudflare documents it is "needs maintainer" until the first sign-in on the real setup.
 - **What Cloudflare answers to an API call after the sign-in ends.** Its documentation says 401 when the request carries `X-Requested-With: XMLHttpRequest`. Nobody has seen it on a real setup: the test Koha's application answers 403 to every request without credentials (2026-11-25). It stays "needs maintainer" until an application with a sign-in page exists.
@@ -147,23 +140,23 @@ None.
 7. A token whose `email` differs from the configured one only in letter case is accepted.
 8. A token that fails a check of behavior 3 returns 401, not 403, whatever its `email`.
 9. An unknown path, and `POST /api/v1/items/1`, return 401 without a valid token, and brief 001's 404 and 405 with one.
-10. The keys are fetched from `<team domain>/cdn-cgi/access/certs`, with one `/` between the parts, on the first request and not at startup. A second request causes no second fetch. Requests that arrive together while no keys are held share one fetch, and when one of them is cancelled the others are still answered. A token that is not a JWT, or names `none` or `HS256`, returns 401 with no fetch, also while no keys are held.
-11. After the published keys change, the first request whose token is signed with the new key is accepted, after one new fetch, when the last fetch started more than 60 seconds ago. When it started less than 60 seconds ago, that request returns 401 and no fetch is made. A key that is no longer published is refused after the new fetch.
-12. When a fetch fails, the request that waited for it gets a masked 503 with `internal_error`, and the log holds `access.keys_unavailable` with the response's `traceId`. This covers a connection failure, a status 500, a body that is not a key set, and a fetch that takes longer than 10 seconds, and a key set without an `RS256` key, each with no keys held and with keys held. While no keys are held, a request less than 60 seconds after a failed fetch gets the 503 without a new fetch.
-13. After a failed fetch, tokens signed with the keys already held are still accepted.
+10. The keys are fetched from `<team domain>/cdn-cgi/access/certs`, with one `/` between the parts, on the first request and not at startup. A second request causes no second fetch. A token that is not a JWT, or names `none` or `HS256`, returns 401.
+11. After the published keys change, the first request whose token is signed with the new key is accepted, without a restart.
+12. While the keys cannot be fetched and none are held, a request with an otherwise valid token returns 401, and the log holds the failed fetch with its cause. This covers a connection failure, a status 500, and a body that is not a key set. Once a fetch succeeds, the same token is accepted.
+13. After a failed refresh, tokens signed with the keys already held are still accepted.
 14. The application refuses to start, naming the setting and no value, when any of the three settings is missing or blank; when the team domain is relative, is `http` (`http://example.cloudflareaccess.com`, `http://localhost:8082`), or has a path, a query, a fragment, or a user name; and when the email is `staff`, `@example.org`, `staff@`, or `a b@example.org`. It starts with `https://example.cloudflareaccess.com`, with and without a trailing `/`, and with `https://localhost:8443`.
-15. No log line and no response holds the token, the value of its `email`, `sub`, `iss`, or `aud`, its key name, or the configured email, on the accepted path and on each refused path of behaviors 2, 3, 6, and 17.
+15. No log line and no response holds a whole token, a token's `email`, or the configured email, on the accepted path and on each refused path of behaviors 2, 3, 6, and 17. No response holds the reason for a 401, in its body or in a header.
 16. A token that Cloudflare Access issued passes every check of behavior 3 against the keys fetched from Cloudflare: the answer is 403, because a service token has no email. The same token with one changed character returns 401. `[C]` The check gets its token from the test Koha's address with the service token of `TS-013`, and reads the team domain and the audience from that token. It belongs to the test Koha checks: it carries the same mark, is skipped when the variables are absent, and falls under the same rules for a merge (`docs/process.md`, sections 12 and 13).
 17. With a valid token for the configured email, a request without `X-Requested-With`, or with another value, returns 403 `request_refused`, for GET and for POST. Koha is not called.
 18. Without a valid token the answer is 401, and with a wrong email it is 403 `access_denied`, whether or not `X-Requested-With` is there.
 
 ## 7. How it will be built
 
-All of it is in `Minioasis.Api`, because staff sign-in is a matter of HTTP (`AR-001`, `AR-003`). One piece of middleware in front of routing does the whole check. It reads the token from the Cloudflare header, asks a small key source of our own for the keys, waiting for a fetch where "The keys" in part 3 needs one, and has the library validate the token with the parameters of part 3. Then it compares the email and checks `X-Requested-With`. It writes the challenge header itself. The key source fetches through a named HTTP client with the 10 second limit. The three new errors are errors of HTTP itself and sit beside `not_found` in Api (`ER-004`), with their text in `errors.en.json`. `access.keys_unavailable` is a shared definition in Application with the category "a dependency is unavailable", beside the `koha.*` codes. The three settings follow the pattern of the Koha options and their validator.
+All of it is in `Minioasis.Api`, because staff sign-in is a matter of HTTP (`AR-001`, `AR-003`). ASP.NET's own JWT bearer authentication does the validation. It reads the token from the Cloudflare header, validates it with the parameters of part 3, and takes its keys through the library's configuration manager, with a few lines of our own that read Cloudflare's key set, since that address is a key set and not an OpenID Connect discovery document. Three settings differ from the defaults: the switch `Switch.Microsoft.IdentityModel.UpdateConfigAsBlocking` is on, the challenge header carries no error details and has the value of part 3, and the fetch has the 10 second limit of brief 001. One piece of middleware in front of routing asks for the authentication result, then compares the email and checks `X-Requested-With`. The three new errors are errors of HTTP itself and sit beside `not_found` in Api (`ER-004`), with their text in `errors.en.json`. The three settings follow the pattern of the Koha options and their validator.
 
 | Component and project | Package | Version | Why |
 | --- | --- | --- | --- |
-| Backend, `Minioasis.Api` | `Microsoft.IdentityModel.JsonWebTokens` | 8.19.2 | Reading the token and checking its signature, issuer, audience, and lifetime, and reading the key set. Writing these by hand is how validation goes wrong. It is Microsoft's library, in the version that ASP.NET 10.0.15's own JWT package uses. It brings `Microsoft.IdentityModel.Tokens` with it. |
+| Backend, `Minioasis.Api` | `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.0.15 | Signature, issuer, audience, and lifetime checks, and fetching and refreshing the keys. Writing these by hand is how validation goes wrong. It is Microsoft's package, on the version of the other ASP.NET packages here. It brings `Microsoft.IdentityModel.*` 8.19.2 with it. |
 
 No other package. The tests create an RSA key in memory, answer the key fetch with an `HttpMessageHandler` double (`TS-004`), and sign their own tokens with the library that the package brings. The existing endpoint tests of brief 001 send a valid token and the header.
 
@@ -174,7 +167,7 @@ No other package. The tests create an RSA key in memory, answer the key fetch wi
 - `docs/best-practices/external-systems.md`: its opening sentence, "Koha is the only external system today", gains Cloudflare's key address. No rule changes.
 - `TS-013`: one sentence that lets a test Koha check read the public signing keys of the Cloudflare Access team in front of the test Koha.
 - `docs/transfer.md`, section 2: the Access application's settings. It covers the whole address with no path left out, its cookie is `HttpOnly`, it has no CORS settings, Google is the only sign-in method, and the policy admits the one email.
-- `docs/ROADMAP.md`: the frontend foundation's contract file includes the 401, the two 403 answers, and the masked 503.
+- `docs/ROADMAP.md`: the frontend foundation's contract file includes the 401 and the two 403 answers.
 
 The build also updates `docs/running.md` (the three settings, and how to call the API by hand) and `docs/STATE.md`.
 
