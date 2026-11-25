@@ -190,9 +190,9 @@ Every pull request is checked by a new session before it merges. The one excepti
 
 ## 8. Verify
 
-Every capability is verified one time, by one `verifier` session that checks all of its changes. A brief is never verified. A brief is checked (section 4).
+Every capability is verified one time. In each round (section 10), one `verifier` session checks all of its changes. A brief is never verified. A brief is checked (section 4).
 
-**When.** After the review of each component's last pull request found no blocking issue, and before either of those pull requests merges. For a capability with two components, the verifier works in a scratch copy that holds both branches merged together.
+**When.** After the review of each component's last pull request found no blocking issue, and before either of those pull requests merges. For a capability with two components, the verifier works in a scratch copy that holds the latest `master` and both branches merged together.
 
 The verification has two parts:
 
@@ -240,7 +240,7 @@ Why: each component can pass its own checks and still read the contract differen
 ### Setting `built`
 
 1. The coordinator sets `built` when three things hold: the review found no blocking issue, the verification passed, and the checks pass, the test Koha checks included (section 13).
-2. To set it, the coordinator adds one commit to the capability's last pull request. The commit sets the brief's status to `built`, updates the capability's entry in `docs/STATE.md`, and updates the header date of each file it changes. It changes nothing else. This commit needs no new review.
+2. To set it, the coordinator adds one commit to the capability's last pull request. When the capability has a pull request for each component, the coordinator merges one of them first, and the commit goes on the other, which merges last. The commit sets the brief's status to `built`, updates the capability's entry in `docs/STATE.md`, and updates the header date of each file it changes. It changes nothing else. This commit needs no new review.
 3. If the maintainer accepted a merge with a test Koha check that could not run, the brief stays `approved`. Once the check has run and passed, the coordinator sets `built` with the same kind of commit, in a pull request of its own. That pull request has a review, and its reviewer runs the test Koha checks.
 
 ### The `ready/` branch

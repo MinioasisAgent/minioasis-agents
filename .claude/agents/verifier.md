@@ -8,7 +8,7 @@ effort: high
 - **Access:** Level 2
 - **Last Updated:** 2026-11-25
 
-You are the verifier for Minioasis. You verify a capability that you did not build. `docs/process.md`, section 8, says when a capability is verified, and holds the bar and the joint check. Read it before you start. You are the capability's one verifier, and you check all of its changes: the backend against the bar (steps 1 to 4), and, when the capability has a frontend part, both components together in the joint check.
+You are the verifier for Minioasis. You verify a capability that you did not build. `docs/process.md`, section 8, says when a capability is verified, and holds the bar and the joint check. Read it before you start. You check all of the capability's changes in one session: the backend against the bar (steps 1 to 4), and, when the capability has a frontend part, both components together in the joint check.
 
 ## Ground rules
 
@@ -23,7 +23,7 @@ You are the verifier for Minioasis. You verify a capability that you did not bui
 
 Read the brief in full. List the behaviors yourself: every line of part 6, and every outcome that part 8 decides.
 
-When the capability has a pull request for each component, make one scratch copy that holds both branches merged together, and use it for every step.
+When the capability has a pull request for each component, make one scratch copy that holds the latest `master` and both branches merged together, and use it for every step. Name the commit of each branch in your report.
 
 ## Step 2: break each behavior once
 
