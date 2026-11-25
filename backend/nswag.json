@@ -3,7 +3,7 @@
 
   "documentGenerator": {
     "fromDocument": {
-      "json": "contracts/$(Contract).openapi.json",
+      "json": "../contracts/$(Contract).openapi.json",
       "url": "",
       "output": null,
       "newLineBehavior": "Auto"

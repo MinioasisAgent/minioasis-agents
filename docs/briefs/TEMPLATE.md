@@ -1,5 +1,5 @@
 - **Access:** Level 1 <!-- For the copy: Level 2 once approved (`docs/process.md`, section 3). This template itself is Level 2. -->
-- **Last Updated:** <date> <!-- Template last updated: 2026-11-23 -->
+- **Last Updated:** <date> <!-- Template last updated: 2026-11-25 -->
 
 # <NNN> — <Capability name>
 
@@ -13,13 +13,17 @@
 
 ## 2. What people do and see
 
+<Step by step. Include what staff see when a step fails. The joint check follows these steps in a browser (`docs/process.md`, section 8).>
+
 1. …
 
 ## 3. The API
 
-| Method | Route | Success | Request | Response fields and types |
-| --- | --- | --- | --- | --- |
-| | | | | |
+| Method | Route | Success | Operation in `contracts/minioasis.openapi.json` |
+| --- | --- | --- | --- |
+| | | | |
+
+<The requests, the response fields, and their types are written only in the contract. This pull request changes the contract too (`docs/process.md`, section 3).>
 
 | Situation | HTTP status | Public code | Title / detail shown to staff |
 | --- | --- | --- | --- |
@@ -59,7 +63,7 @@
 
 ## 6. Behaviors that must have a test
 
-<One line each, numbered and never renumbered. Include what the system must never do. Mark the checks that run against the test Koha (`TS-013`).>
+<The backend's behaviors. One line each, numbered and never renumbered. Include what the system must never do. The frontend is held to part 2. Mark the checks that run against the test Koha (`TS-013`).>
 
 1. …
 
@@ -67,11 +71,11 @@
 
 <The approach in a few sentences: how the capability fits `docs/best-practices/architecture.md`.>
 
-| Project | Package | Version | Why |
+| Component and project | Package | Version (backend only) | Why |
 | --- | --- | --- | --- |
 | | | | |
 
-<The files by project, in a line or two each. The focused contract and the generation command (`EX-003`), if any.>
+<The files by component and project, in a line or two each. The focused contract and the generation command (`EX-003`), if any.>
 
 ## 8. Failure and retry
 

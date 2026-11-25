@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-25
 
 # Best practices
 
@@ -14,6 +14,7 @@ How code and tests are written in Minioasis. Every rule applies to every capabil
 | [`errors.md`](errors.md) | `ER` | 11 | Defining errors, the HTTP error contract, logging, and cancellation |
 | [`external-systems.md`](external-systems.md) | `EX` | 13 | Contracts and generated clients, authentication to Koha, retries, deadlines |
 | [`testing.md`](testing.md) | `TS` | 13 | What to test, where, with which test doubles, and when to ask the test Koha |
+| [`frontend.md`](frontend.md) | `FE` | 6 | The frontend's tools, what it may decide, how it is served, and what it tests |
 
 ## Which rules apply to a change
 
@@ -21,10 +22,14 @@ How code and tests are written in Minioasis. Every rule applies to every capabil
 | --- | --- |
 | Any C# file | `architecture.md`, `code-design.md` |
 | An error definition, a result, a failure path, an endpoint's response, or `Minioasis.Api/Resources/` | also `errors.md` |
-| `Minioasis.Koha/`, `contracts/`, or the client generator's configuration | also `external-systems.md` and `errors.md` |
+| `Minioasis.Koha/`, a Koha contract in `contracts/`, or the client generator's configuration | also `external-systems.md` and `errors.md` |
 | Any test project | also `testing.md` |
+| Any file under `web/` | `frontend.md` only |
+| `contracts/minioasis.openapi.json` | `errors.md`, and `FE-005` |
 
 When unsure whether a file applies, include it. Read the files before you write. A review reports every rule in them that the change breaks (`.claude/agents/reviewer.md`). Cite a rule by its ID, for example "`CD-002`: the adapter validates caller input".
+
+A path that starts with `Minioasis.` is inside `backend/`, here and in every rule file.
 
 ## Existing code
 

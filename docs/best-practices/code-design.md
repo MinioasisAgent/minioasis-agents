@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-25
 
 # Code design
 
@@ -236,4 +236,4 @@ if (result.IsSuccess)
 
 When you apply this style to existing code, keep the enclosed statements and their order exactly as they were.
 
-**Checked by:** tool (`dotnet format minioasis.slnx --verify-no-changes`, which `scripts/preflight.sh` and CI run). Missing braces are reported only if `.editorconfig` sets `csharp_prefer_braces = true` at warning severity or higher.
+**Checked by:** tool (`dotnet format backend/minioasis.slnx --verify-no-changes`, which `scripts/preflight.sh` and CI run). Missing braces are reported only if `.editorconfig` sets `csharp_prefer_braces = true` at warning severity or higher.

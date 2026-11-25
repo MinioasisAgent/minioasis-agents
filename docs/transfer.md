@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-22
+- **Last Updated:** 2026-11-25
 
 # Transfer to production
 
@@ -82,7 +82,7 @@ Then apply production's branch protection (section 5), and tell an agent that th
 - [ ] **Security:** authentication, logging, configuration, and any container or deployment files. No secret and no patron data appears in a log.
 
   Why: an agent merges security code that builds exactly what an approved brief states. So this item is the last check of that code before production.
-- [ ] **Public contract:** the routes, and `Minioasis.Api/Resources/errors.en.json`.
+- [ ] **Public contract:** the routes, and `backend/Minioasis.Api/Resources/errors.en.json`.
 - [ ] **Safeguards:** every change to a path in `.github/CODEOWNERS` is one that you accepted. GitHub enforces this only in part, so this item is the backstop.
 - [ ] **CI:** passing on the pull request.
 

@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-25
 
 # Minioasis rulebook
 
@@ -9,7 +9,16 @@ tundx is the maintainer. Other files say "the maintainer" and mean tundx.
 
 ## 1. The project
 
-Minioasis is an application for library staff, written in C# on .NET 10. It covers circulation and catalogue work. Its rules and its use of Koha must stay easy to understand as it grows.
+Minioasis is an application for library staff. It covers circulation and catalogue work. Its rules and its use of Koha must stay easy to understand as it grows.
+
+It has two components. They share one thing: the API contract (`docs/process.md`, section 3).
+
+| Component | Folder | Built with | Owns |
+| --- | --- | --- | --- |
+| Backend | `backend/` | C# on .NET 10 | Staff authentication and authorization, the library's rules and every check of them, and every call to Koha |
+| Frontend | `web/` | React and TypeScript, as a single-page application that runs in the browser (`FE-001`) | What staff see and do, and the calls to the backend's API |
+
+The frontend holds no library rule (`FE-002`). Nginx serves it, and passes its API calls to the backend (`FE-004`).
 
 Koha holds the library's records and transactions. Minioasis holds the staff workflows and the rules that use them. Minioasis has no storage of its own. New storage or a new integration is Level 2 (section 3, item 4), and its proposal states its purpose and its owner.
 
@@ -151,9 +160,9 @@ Each role has a file in `.claude/agents/`. The file sets the role's model and de
 4. **Role files name a model family only:** `fable`, `opus`, or `sonnet`. Never write a numbered or dated model name.
 
    Why: each role then runs on the latest version, and the rulebook needs no edit at every release.
-5. **One coder by default.** One coder builds a capability. The coordinator starts another only when it judges that necessary, and says why in the pull request. Coders that work at the same time each use their own worktree (`docs/process.md`, section 11).
+5. **One coder for each component by default.** When a capability has a backend part and a frontend part, one coder builds each, and the two work at the same time from the approved brief and its API contract. The coordinator starts a second coder for the same component only when it judges that necessary, and says why in the pull request. Coders that work at the same time each use their own worktree (`docs/process.md`, section 11).
 
-   Why: measured on the first capability, several coders would have saved about 36 minutes of ten hours and no cost, and they add merge conflicts.
+   Why: the two components share only the API contract, so their coders cannot conflict, and the capability is finished sooner. Inside one component it is different: measured on the first capability, several coders would have saved about 36 minutes of ten hours and no cost, and they add merge conflicts.
 6. **Record what ran.** The pull request names the model, effort, duration, and token count of every session that the coordinator started for it, as the tool reports them.
 
    Why: the next change to this process then starts from measurements.
