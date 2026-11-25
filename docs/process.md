@@ -118,7 +118,7 @@ The maintainer accepts the brief's pull request in one of the three ways that `C
 ### Before code
 
 1. The brief is `approved`.
-2. The coordinator gives each component of the capability to one `coder`: one for the backend, and one for the frontend when the capability has a screen. The two work at the same time, each on its own branch with its own pull request. `CLAUDE.md`, section 4, rule 5, says when a second coder for the same component may start.
+2. The coordinator gives each component that the capability changes to one `coder`. A capability may change the backend only, the frontend only, or both. When it changes both, the two coders work at the same time, each on its own branch with its own pull request. `CLAUDE.md`, section 4, rule 5, says when a second coder for the same component may start.
 
 ### While building
 
@@ -192,14 +192,15 @@ Every pull request is checked by a new session before it merges. The one excepti
 
 Every capability is verified one time. In each round (section 10), one `verifier` session checks all of its changes. A brief is never verified. A brief is checked (section 4).
 
-**When.** After the review of each component's last pull request found no blocking issue, and before either of those pull requests merges. For a capability with two components, the verifier works in a scratch copy that holds the latest `master` and both branches merged together.
+**When.** After the review of the last pull request of each component that the capability changes found no blocking issue, and before any of those pull requests merges.
 
-The verification has two parts:
+**What the verifier runs** depends on what the capability changes:
 
-| Part | For |
-| --- | --- |
-| The bar | The backend's behaviors |
-| The joint check | Both components together, for a capability with a frontend part |
+| The capability changes | The verifier runs | On |
+| --- | --- | --- |
+| The backend only | The bar | The backend's branch |
+| The frontend only | The joint check | The frontend's branch, with the backend that is already on `master` |
+| Both | The bar, then the joint check | A scratch copy that holds the latest `master` and both branches merged together |
 
 Why one session: it reads the brief and the code once, it reports once, and the capability has one moment at which it is verified. The backend's pull request waits for the frontend's review, which costs little, because the capability is not finished until both have merged.
 
@@ -343,7 +344,7 @@ An agent may merge its own Level 1 pull request only when all of these hold:
 4. Every test Koha check that applies ran and passed (section 13). If one could not run, the pull request is Level 2, because it would merge with a check left out (`CLAUDE.md`, section 3, item 5). Label it `needs-human`, and say which check and why.
 
    Why: without this, a capability could again be built on a belief about Koha that nothing has tested.
-5. For the last pull request of each component: the verification passed (section 8).
+5. For the last pull request of each component that the capability changes: the verification passed (section 8).
 6. `docs/STATE.md` and `docs/ROADMAP.md` are updated where their content changed.
 
 Merge with **squash**, then delete the task branch. The one exception is a production sync, which merges with a merge commit (`docs/transfer.md`, section 4).
