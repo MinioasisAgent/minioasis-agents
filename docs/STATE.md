@@ -9,7 +9,8 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- None. Brief 001, get item (`docs/briefs/001-get-item.md`), is `built` (2026-11-23) and waits for the maintainer's transfer from the branch `ready/001-get-item`.
+- Brief 002, staff access control (`docs/briefs/002-staff-access-control.md`), is a `draft` that waits for the maintainer's acceptance. Nothing of it is built.
+- Brief 001, get item (`docs/briefs/001-get-item.md`), is `built` (2026-11-23) and waits for the maintainer's transfer from the branch `ready/001-get-item`.
 
 ## What exists
 
@@ -23,7 +24,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Next
 
-- Brief 002, staff access control (`docs/ROADMAP.md`).
+- Build brief 002, once it is `approved`.
 
 ## Recent decisions
 
@@ -37,6 +38,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
 - **Whether get item is transferred to production before staff access control (brief 002) is built.**
+- **How the backend's container reaches Koha.** Everything runs in Docker except Koha (the maintainer, 2026-11-25). Inside a container `localhost` is the container, and brief 001 accepts plain `http` only for `localhost`. Either the container shares the machine's network, or brief 001 changes. To settle with the Docker files, before get item is transferred.
 
 ## Production transfers
 

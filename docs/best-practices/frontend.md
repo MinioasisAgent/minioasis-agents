@@ -91,17 +91,28 @@ GOOD: browser ──► nginx ──► static files
 
 With one address, the browser needs no cross-origin permission, the backend needs no CORS setting, and the frontend never handles a token.
 
+There are two boundaries, and neither relies on the other.
+
+- **Cloudflare Access is the first.** It protects the whole staff address: the frontend's HTML, CSS, JavaScript, and other static files, and every route under `/api/`. No path is left out. A person who is not signed in cannot load the React application at all.
+- **The backend is the second.** It validates Cloudflare's token and the staff member's email itself, on every request, as defence in depth against a request that bypasses the first (`docs/briefs/002-staff-access-control.md`).
+
+The frontend is no boundary. It checks no sign-in and holds no token.
+
 How a request travels in production. The backend's part of step 6 holds once staff access control is built (`docs/ROADMAP.md`).
 
-1. The staff member's browser opens the Minioasis address over HTTPS. Cloudflare Access signs the staff member in before anything reaches the server.
+1. The staff member's browser opens the Minioasis address over HTTPS. Cloudflare Access signs the staff member in before anything reaches the server, whether the request is for a file of the frontend or for the API.
 2. Cloudflare Tunnel passes each request to nginx. Nginx listens on localhost only.
 3. Nginx serves the built frontend files. For an address that is not a file and does not start with `/api/`, it serves `index.html`, so that React Router can show the right screen.
 4. The frontend calls the API (`FE-005`) on relative paths that start with `/api/`. It sends no token and stores none.
 5. Cloudflare Access adds a signed token to every request that it lets through. Nginx passes requests under `/api/` to the backend, with that token unchanged.
-6. The backend listens on localhost only. It validates the token itself on every request, does the work, and answers in JSON.
+6. The backend is reachable from its own machine only. It validates the token and the email itself on every request, does the work, and answers in JSON.
 7. The answer returns through nginx and Cloudflare to the browser, and React updates the screen.
 
-When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call. By Cloudflare's documentation, Access then answers 401; the brief for staff access control confirms it on the real setup. On a 401 that is not the backend's Problem Details, the frontend asks the staff member to reload the page. A 401 from the backend is shown like any other backend error. The brief for staff access control says whether the backend ever answers 401.
+When the sign-in ends while a screen is open, Cloudflare Access answers an API call itself. By default it answers with a redirect to its sign-in page, which the frontend cannot tell from a network failure. So the frontend sends the header `X-Requested-With: XMLHttpRequest` on every API call. By Cloudflare's documentation ("Session management", section "AJAX"), Access then answers 401. The backend requires the same header on every call, and refuses a call without it (`docs/briefs/002-staff-access-control.md`).
+
+The backend answers 401 too, as Problem Details, when it cannot confirm the token. On a 401 from either, the frontend reloads the page one time, so that Cloudflare Access can sign the staff member in again. If the first API call after that reload is also answered 401, the frontend does not reload again: it shows the backend's error when the 401 is Problem Details, and otherwise asks the staff member to sign in again.
+
+Why one time: a wrong setting can make the backend answer 401 while Cloudflare Access still sees a signed-in person, and a reload on every 401 would then never stop.
 
 In development, Vite's development server takes the place of nginx and passes `/api/` to the backend.
 
