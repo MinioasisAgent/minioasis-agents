@@ -38,7 +38,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
 - **Whether get item is transferred to production before staff access control (brief 002) is built.**
-- **How the containers reach each other and Koha.** `FE-004`'s example has nginx call the backend at `127.0.0.1`, which inside a container is the container itself. Everything runs in Docker except Koha (the maintainer, 2026-11-25). Inside a container `localhost` is the container, and brief 001 accepts plain `http` only for `localhost`. Either the container shares the machine's network, or brief 001 changes. To settle with the Docker files, before get item is transferred.
+- **How the containers reach each other and Koha.** `FE-004`'s example has nginx call the backend at `127.0.0.1`, which inside a container is the container itself, and has Vite's development server pass `/api/` to the backend, which after brief 002 refuses a call without a token. Everything runs in Docker except Koha (the maintainer, 2026-11-25). Inside a container `localhost` is the container, and brief 001 accepts plain `http` only for `localhost`. Either the container shares the machine's network, or brief 001 changes. To settle with the Docker files, before get item is transferred.
 
 ## Production transfers
 

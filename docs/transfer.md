@@ -39,8 +39,10 @@ The Access application for the staff address is the first of the two boundaries 
 2. Google is its only sign-in method.
 3. Its policy admits the one staff email, the same one that the backend is configured with (`docs/briefs/002-staff-access-control.md`, part 3).
 4. Its cookie setting "HttpOnly" is on, so that no script in the page can read the token. The frontend never needs it (`FE-004`).
-5. It has no CORS settings, and it does not pass `OPTIONS` requests on to the origin. Either would let another website send the header that the backend requires.
+5. It has no CORS settings, and it does not pass `OPTIONS` requests on to the origin. With CORS settings, Cloudflare itself would permit another website to send the header that the backend requires.
 6. Its audience tag, which Cloudflare shows on the application's page, is the value of `MINIOASIS_CLOUDFLARE_ACCESS_AUDIENCE`.
+
+The backend's container must be able to reach the team's address at Cloudflare over HTTPS, to fetch the signing keys.
 
 ### For production
 
