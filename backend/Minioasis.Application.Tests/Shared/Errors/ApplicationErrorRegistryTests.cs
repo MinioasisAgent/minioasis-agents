@@ -1,4 +1,6 @@
 using Minioasis.Application.Shared.Errors;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace Minioasis.Application.Tests.Shared.Errors;
@@ -13,6 +15,43 @@ public sealed class ApplicationErrorRegistryTests
         Assert.Equal(
             ["marked.first", "marked.second"],
             registry.Definitions.Select(definition => definition!.Code).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void The_default_registry_holds_every_definition_the_application_declares_exactly_once()
+    {
+        const BindingFlags AnyStatic =
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var declaringMembers = typeof(ApplicationErrorRegistry).Assembly
+            .GetTypes()
+            .Where(type => !type.IsDefined(typeof(CompilerGeneratedAttribute), false))
+            .SelectMany(type => type.GetFields(AnyStatic)
+                .Where(field => !field.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                .Where(field => field.FieldType == typeof(ApplicationErrorDefinition))
+                .Cast<MemberInfo>()
+                .Concat(type.GetProperties(AnyStatic)
+                    .Where(property => property.PropertyType == typeof(ApplicationErrorDefinition))))
+            .ToList();
+
+        Assert.Empty(declaringMembers
+            .Select(member => member.DeclaringType!)
+            .Where(type => !type.IsDefined(typeof(ErrorDefinitionsAttribute), false))
+            .Select(type => type.FullName)
+            .Distinct());
+        Assert.Empty(declaringMembers
+            .Where(member => member is not FieldInfo { IsPublic: true, IsStatic: true, IsInitOnly: true })
+            .Select(member => $"{member.DeclaringType!.FullName}.{member.Name}"));
+
+        var declared = declaringMembers
+            .Cast<FieldInfo>()
+            .Select(field => (ApplicationErrorDefinition)field.GetValue(null)!)
+            .ToList();
+
+        Assert.NotEmpty(declared);
+        Assert.Equal(declared.Count, ApplicationErrorRegistry.Default.Definitions.Count);
+        Assert.All(declared, definition => Assert.Single(
+            ApplicationErrorRegistry.Default.Definitions,
+            registered => ReferenceEquals(registered, definition)));
     }
 
     [Fact]

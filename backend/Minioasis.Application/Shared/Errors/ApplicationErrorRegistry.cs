@@ -25,7 +25,7 @@ public sealed class ApplicationErrorRegistry(IReadOnlyList<ApplicationErrorDefin
     internal static ApplicationErrorRegistry Discover(IEnumerable<Type> types) =>
         new(types
             .Where(type => type.IsDefined(typeof(ErrorDefinitionsAttribute), false))
-            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly))
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsInitOnly && field.FieldType == typeof(ApplicationErrorDefinition))
             .Select(field => (ApplicationErrorDefinition?)field.GetValue(null))
             .ToList());
