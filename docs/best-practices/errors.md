@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-25
 
 # Errors
 
@@ -27,13 +27,14 @@ An error has exactly one definition: a stable code and a category, declared in t
 
 To add an error:
 
-1. Declare the definition, with its code and its category, in the feature's `<Feature>ErrorDefinitions` group.
+1. Declare the definition, with its code and its category, as a `public static readonly` field of the feature's `<Feature>ErrorDefinitions` group, and mark the group `[ErrorDefinitions]`.
 2. If the client can act on it (validation or not found), add its message to the English resource file, under exactly the same code (`ER-011`).
 3. If it is a server failure, add no message.
 4. Return the error by referring to the definition, and supply a value for every placeholder in its message.
 
 ```csharp
 // GOOD: declared once
+[ErrorDefinitions]
 public static class LoanErrorDefinitions
 {
     public static readonly ApplicationErrorDefinition NotFound =
@@ -51,7 +52,7 @@ return CreateFailure<RenewLoanResponse>(new ApplicationErrorDefinition("loans.no
 
 Introducing another category that clients can act on is a change to the public contract: design its response explicitly, and include it in the startup check.
 
-**Checked by:** review; the startup check rejects a client-visible definition without a message (`ER-011`)
+**Checked by:** review; a test fails if a group lacks the mark or a definition is not a public static readonly field; the startup check rejects a client-visible definition without a message (`ER-011`)
 
 ---
 
