@@ -1,5 +1,5 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-25
+- **Last Updated:** 2026-11-26
 
 # Minioasis rulebook
 
@@ -180,9 +180,13 @@ Each role has a file in `.claude/agents/`. The file sets the role's model and de
 | Plan what comes next | `docs/ROADMAP.md` |
 | Run the application, or generate a Koha client | `docs/running.md` |
 
-## 6. Done, and how to report
+## 6. Done, how to report, and how to write
 
 - **Level 1 work is done** when the approved behavior is built, the checks pass, the diff holds nothing unrelated, the review found no blocking issue, and the pull request is merged.
 - **Level 2 work is done** when its pull request is ready for review and labelled `needs-human`.
 
-Report in the pull request under the headings of `.github/pull_request_template.md`. In a session, address the maintainer as tundx. Lead with the outcome. Keep it short. Use plain words.
+Report in the pull request under the headings of `.github/pull_request_template.md`. In a session, address the maintainer as tundx. Lead with the outcome.
+
+**How to write.** This applies to everything you write for the project.
+
+Write clear, complete and self-contained sentences. Use established technical terminology rather than indirect descriptions. Never sacrifice clarity for brevity. Every architectural justification must explicitly explain what is being decided, why it is being decided, and what consequences follow.
