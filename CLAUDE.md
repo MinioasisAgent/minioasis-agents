@@ -187,6 +187,6 @@ Each role has a file in `.claude/agents/`. The file sets the role's model and de
 
 Report in the pull request under the headings of `.github/pull_request_template.md`. In a session, address the maintainer as tundx. Lead with the outcome.
 
-**How to write.** This applies to everything you write for the project: a brief, a rule, a pull request, a report, and a message to tundx.
+**How to write.** This applies to everything you write for the project.
 
 Write clear, complete and self-contained sentences. Use established technical terminology rather than indirect descriptions. Never sacrifice clarity for brevity. Every architectural justification must explicitly explain what is being decided, why it is being decided, and what consequences follow.
