@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -57,7 +58,7 @@ internal static class StaffAccessExtensions
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
         services.AddSingleton<IConfigurationManager<OpenIdConnectConfiguration>>(CreateKeyManager);
 
-        services.AddAuthentication().AddJwtBearer(AuthenticationScheme);
+        AddAuthenticationWithoutDataProtection(services).AddJwtBearer(AuthenticationScheme);
         services.AddOptions<JwtBearerOptions>(AuthenticationScheme)
             .Configure<IOptions<CloudflareAccessOptions>, IConfigurationManager<OpenIdConnectConfiguration>>(ConfigureTokenHandler);
         return services;
@@ -71,6 +72,21 @@ internal static class StaffAccessExtensions
     /// </remarks>
     public static IApplicationBuilder UseStaffAccess(this IApplicationBuilder app) =>
         app.UseMiddleware<StaffAccessHandler>().UseAuthentication();
+
+    /// <summary>
+    /// What <c>AddAuthentication()</c> registers, less Data Protection, which nothing here uses: the JWT bearer handler
+    /// protects no data. With it, every host start loads a key ring, and on a machine without one writes a key to the
+    /// user profile and logs a warning. The handler's settings come only from <see cref="ConfigureTokenHandler"/>:
+    /// the configuration section <c>Authentication</c> is not read, so no setting but the three of brief 002 changes
+    /// how a token is validated.
+    /// </summary>
+    private static AuthenticationBuilder AddAuthenticationWithoutDataProtection(IServiceCollection services)
+    {
+        services.AddAuthenticationCore();
+        services.AddWebEncoders();
+        services.TryAddSingleton<IAuthenticationConfigurationProvider, NoAuthenticationConfiguration>();
+        return new AuthenticationBuilder(services);
+    }
 
     /// <summary>
     /// The library's configuration manager over Cloudflare's key address. "Last known good" is off, so a key that the
@@ -145,5 +161,11 @@ internal static class StaffAccessExtensions
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>An empty authentication configuration, so that no scheme takes settings from configuration.</summary>
+    private sealed class NoAuthenticationConfiguration : IAuthenticationConfigurationProvider
+    {
+        public IConfiguration AuthenticationConfiguration { get; } = new ConfigurationBuilder().Build();
     }
 }

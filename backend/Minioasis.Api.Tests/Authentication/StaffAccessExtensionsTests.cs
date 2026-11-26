@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols;
@@ -27,6 +29,34 @@ public sealed class StaffAccessExtensionsTests
         Assert.Same(manager, jwt.ConfigurationManager);
         Assert.Equal("https://example.cloudflareaccess.com/cdn-cgi/access/certs", manager.MetadataAddress);
         Assert.False(manager.UseLastKnownGoodConfiguration);
+    }
+
+    [Fact]
+    public async Task The_unmodified_host_registers_no_data_protection()
+    {
+        await using var factory = new ApiTestHostFactory();
+        _ = factory.Server;
+
+        // Nothing in Minioasis protects data. With Data Protection registered, every host start loads a key ring, and
+        // on a machine without one it writes a key to the user profile and logs a warning.
+        Assert.Null(factory.Services.GetService<IDataProtectionProvider>());
+        Assert.Null(factory.Services.GetService<IKeyManager>());
+    }
+
+    [Fact]
+    public async Task The_token_handler_takes_no_settings_from_the_authentication_configuration_section()
+    {
+        await using var factory = new ApiTestHostFactory(settings: new Dictionary<string, string?>
+        {
+            ["Authentication:Schemes:CloudflareAccess:ForwardAuthenticate"] = "Other",
+            ["Authentication:Schemes:CloudflareAccess:RefreshOnIssuerKeyNotFound"] = "false",
+        });
+        _ = factory.Server;
+
+        var jwt = factory.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>().Get("CloudflareAccess");
+
+        Assert.Null(jwt.ForwardAuthenticate);
+        Assert.True(jwt.RefreshOnIssuerKeyNotFound);
     }
 
     [Fact]
