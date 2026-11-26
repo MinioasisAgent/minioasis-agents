@@ -55,6 +55,8 @@ public sealed class StartupTests
     [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_TEAM_DOMAIN", "https://example.cloudflareaccess.com#keys")]
     [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_TEAM_DOMAIN", "https://user@example.cloudflareaccess.com")]
     [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_TEAM_DOMAIN", "https://user:password@example.cloudflareaccess.com")]
+    [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_TEAM_DOMAIN", "https://@example.cloudflareaccess.com")]
+    [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_TEAM_DOMAIN", "https://:@example.cloudflareaccess.com")]
     [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_AUDIENCE", null)]
     [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_AUDIENCE", "")]
     [InlineData("MINIOASIS_CLOUDFLARE_ACCESS_AUDIENCE", " ")]

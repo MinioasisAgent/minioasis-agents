@@ -43,10 +43,16 @@ internal sealed class CloudflareAccessOptionsValidator : IValidateOptions<Cloudf
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
+    /// <remarks>
+    /// <see cref="Uri.UserInfo"/> is empty both without a user-info part and with an empty one, as in
+    /// <c>https://@host</c>, so the text is also checked for <c>@</c>. A valid team domain has no path, query, or
+    /// fragment, so it can hold an <c>@</c> only in a user-info part.
+    /// </remarks>
     private static bool IsValidTeamDomain(string text) =>
         Uri.TryCreate(text, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttps
         && uri.UserInfo.Length == 0
+        && !text.Contains('@', StringComparison.Ordinal)
         && uri.AbsolutePath == "/"
         && uri.Query.Length == 0
         && uri.Fragment.Length == 0
