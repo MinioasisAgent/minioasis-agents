@@ -22,7 +22,7 @@ public sealed class ItemEndpointsTests
         var gateway = new FakeGetItemGateway(GetItemGatewayResult.Found(new GetItemResponse("12", "7", "BC-1", "QA 76")));
         await using var factory = HostWith(gateway);
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
@@ -43,7 +43,7 @@ public sealed class ItemEndpointsTests
         var gateway = new FakeGetItemGateway(GetItemGatewayResult.Found(new GetItemResponse("12", "7", null, null)));
         await using var factory = HostWith(gateway);
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await ReadJsonAsync(response);
@@ -67,7 +67,7 @@ public sealed class ItemEndpointsTests
         var gateway = new FakeGetItemGateway(GetItemGatewayResult.Found(new GetItemResponse("1", "1", null, null)));
         await using var factory = HostWith(gateway);
 
-        using var response = await factory.CreateClient().GetAsync($"/api/v1/items/{id}", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync($"/api/v1/items/{id}", TestContext.Current.CancellationToken);
 
         await ProblemAssert.HasShapeAsync(
             response,
@@ -84,7 +84,7 @@ public sealed class ItemEndpointsTests
         var gateway = new FakeGetItemGateway(GetItemGatewayResult.Failed(GetItemOutcome.NotFound));
         await using var factory = HostWith(gateway);
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/2147483647", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/2147483647", TestContext.Current.CancellationToken);
 
         await ProblemAssert.HasShapeAsync(
             response,
@@ -102,7 +102,7 @@ public sealed class ItemEndpointsTests
     {
         await using var factory = HostWith(new FakeGetItemGateway(GetItemGatewayResult.Failed(outcome)));
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         await ProblemAssert.IsMaskedAsync(response, status);
     }

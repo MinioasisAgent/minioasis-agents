@@ -1,5 +1,5 @@
 - **Access:** Level 1
-- **Last Updated:** 2026-11-25
+- **Last Updated:** 2026-11-26
 
 # State
 
@@ -9,7 +9,7 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- Brief 002, staff access control (`docs/briefs/002-staff-access-control.md`), is a `draft` that waits for the maintainer's acceptance. Nothing of it is built.
+- Brief 002, staff access control (`docs/briefs/002-staff-access-control.md`), is `built` (2026-11-26) and waits for the maintainer's transfer from the branch `ready/002-staff-access-control`. It changes no frontend: `web/` does not exist yet.
 - Brief 001, get item (`docs/briefs/001-get-item.md`), is `built` (2026-11-23) and waits for the maintainer's transfer from the branch `ready/001-get-item`.
 
 ## What exists
@@ -21,10 +21,14 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
   - The API error contract: Problem Details with `code` and `traceId`, masked server failures, `not_found` and `method_not_allowed`, the errors of HTTP itself that Api defines, the message file `backend/Minioasis.Api/Resources/errors.en.json`, and its startup check.
   - The connection to Koha: the three `MINIOASIS_KOHA_*` settings and their startup check, the client-credentials token provider, the deadline, bearer, and charset handlers, and the focused contracts `contracts/oauth.openapi.json` and `contracts/items.openapi.json` with their generated clients.
   - The test Koha checks for behaviors 1, 5, 8, 12, 14, and 26 (`Category=TestKoha`).
+- **Brief 002 (`built`, reviewed and verified on 2026-11-26):**
+  - Every request, on every path, is checked in front of routing by `Minioasis.Api/Authentication/`: the Cloudflare Access signing keys, the token in `Cf-Access-Jwt-Assertion` (ASP.NET's JWT bearer authentication, package `Microsoft.AspNetCore.Authentication.JwtBearer`), the one configured email, and `X-Requested-With: XMLHttpRequest`. The answers are 401 `unauthenticated`, 403 `access_denied`, 403 `request_refused`, and the masked 503 with the internal code `access.keys_unavailable`.
+  - The three `MINIOASIS_CLOUDFLARE_ACCESS_*` settings and their startup check. How to set them and how to call the API by hand is in `docs/running.md`.
+  - The test Koha check for behavior 16 (`Category=TestKoha`, in `backend/Minioasis.Api.Tests/TestKoha/`), which validates a token that Cloudflare Access issued against Cloudflare's real keys.
 
 ## Next
 
-- Build brief 002, once it is `approved`.
+- The frontend foundation, when the maintainer chooses (`docs/ROADMAP.md`).
 
 ## Recent decisions
 

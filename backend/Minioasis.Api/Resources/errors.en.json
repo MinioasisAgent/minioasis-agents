@@ -14,5 +14,17 @@
   "method_not_allowed": {
     "title": "Method not allowed",
     "detail": "This resource does not support the request method."
+  },
+  "unauthenticated": {
+    "title": "Sign-in required",
+    "detail": "Your sign-in could not be confirmed."
+  },
+  "access_denied": {
+    "title": "Access denied",
+    "detail": "This account may not use Minioasis."
+  },
+  "request_refused": {
+    "title": "Request refused",
+    "detail": "This request did not come from Minioasis."
   }
 }

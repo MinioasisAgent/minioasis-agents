@@ -45,6 +45,11 @@ public sealed class ErrorMessageCatalogTests
         Assert.Equal(
             new ErrorMessage("Method not allowed", "This resource does not support the request method."),
             catalog.Get("method_not_allowed"));
+        Assert.Equal(new ErrorMessage("Sign-in required", "Your sign-in could not be confirmed."), catalog.Get("unauthenticated"));
+        Assert.Equal(new ErrorMessage("Access denied", "This account may not use Minioasis."), catalog.Get("access_denied"));
+        Assert.Equal(
+            new ErrorMessage("Request refused", "This request did not come from Minioasis."),
+            catalog.Get("request_refused"));
     }
 
     /// <summary>
