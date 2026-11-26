@@ -8,6 +8,7 @@ using Minioasis.Api.Tests.Shared.TestDoubles;
 using Minioasis.Application.Items.Abstractions;
 using Minioasis.Application.Items.Responses;
 using Minioasis.Application.Items.Results;
+using System.Buffers.Text;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -298,64 +299,69 @@ public sealed class StaffAccessHandlerTests
             "This resource does not support the request method.");
     }
 
-    [Fact]
-    public async Task Behavior_15_no_log_line_and_no_response_holds_a_token_its_payload_or_an_email()
+    public static TheoryData<string> LeakPaths => [.. LeakCases.Keys];
+
+    /// <summary>
+    /// The accepted path and every refused path that behavior 15 names: behaviors 2, 3 (each token, since the library
+    /// logs a different text for each failed check), 6 (each email), and 17 (GET and POST, without the header and with
+    /// another value). Built when the test runs, as <see cref="RefusedTokenBuilders"/> are.
+    /// </summary>
+    private static Dictionary<string, LeakCase> LeakCases
     {
-        const string TokenEmail = "other.person@example.org";
-        await using var factory = HostWith(FoundGateway());
-        var valid = StaffTokens.Create();
-        var expired = StaffTokens.Create(payload: claims =>
+        get
         {
-            claims["email"] = TokenEmail;
-            claims["iat"] = claims["nbf"] = SecondsFromNow(-600);
-            claims["exp"] = SecondsFromNow(-75);
-        });
-        var wrongAudience = StaffTokens.Create(payload: claims =>
-        {
-            claims["email"] = TokenEmail;
-            claims["aud"] = "other-audience";
-        });
-        var unpublishedKey = StaffTokens.Create(new TestSigningKey("unpublished-key"), claims => claims["email"] = TokenEmail);
-        var otherEmail = TokenWithEmail(TokenEmail);
-        string[] tokens = [valid, expired, wrongAudience, unpublishedKey, otherEmail, "not-a-token"];
+            var cases = new Dictionary<string, LeakCase>
+            {
+                ["accepted"] = new(() => StaffTokens.Create(), ApiTestHostFactory.RequestedWithValue, "GET", HttpStatusCode.OK),
+                ["behavior 2: no token"] = new(() => null, ApiTestHostFactory.RequestedWithValue, "GET", HttpStatusCode.Unauthorized),
+                ["behavior 2: an empty token"] = new(() => string.Empty, ApiTestHostFactory.RequestedWithValue, "GET", HttpStatusCode.Unauthorized),
+            };
+            foreach (var (reason, build) in RefusedTokenBuilders)
+            {
+                cases[$"behavior 3: {reason}"] = new(build, ApiTestHostFactory.RequestedWithValue, "GET", HttpStatusCode.Unauthorized);
+            }
 
-        var responses = new List<HttpResponseMessage>
-        {
-            await AccessRequest.SendAsync(factory, valid),
-            await AccessRequest.SendAsync(factory, token: null),
-            await AccessRequest.SendAsync(factory, expired),
-            await AccessRequest.SendAsync(factory, wrongAudience),
-            await AccessRequest.SendAsync(factory, unpublishedKey),
-            await AccessRequest.SendAsync(factory, "not-a-token"),
-            await AccessRequest.SendAsync(factory, otherEmail),
-            await AccessRequest.SendAsync(factory, valid, requestedWith: null),
-        };
+            foreach (var (name, email) in new (string, string?)[]
+            {
+                ("another address", "other.person@example.org"),
+                ("one more character", StaffTokens.Email + "x"),
+                ("empty", string.Empty),
+                ("missing", null),
+            })
+            {
+                cases[$"behavior 6: email {name}"] =
+                    new(() => TokenWithEmail(email), ApiTestHostFactory.RequestedWithValue, "GET", HttpStatusCode.Forbidden);
+            }
 
-        Assert.Equal(
-            [
-                HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized,
-                HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden,
-            ],
-            responses.Select(response => response.StatusCode));
-        var secrets = tokens
-            .Concat(tokens.Where(token => token.Contains('.', StringComparison.Ordinal)).Select(StaffTokens.PayloadOf))
-            .Append(TokenEmail)
-            .Append(StaffTokens.Email)
-            .ToList();
-        var written = new List<string>();
-        foreach (var response in responses)
-        {
-            written.Add(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-            written.AddRange(response.Headers.Concat(response.Content.Headers)
-                .SelectMany(header => header.Value.Select(value => $"{header.Key}: {value}")));
-            response.Dispose();
+            foreach (var method in new[] { "GET", "POST" })
+            {
+                cases[$"behavior 17: {method} without X-Requested-With"] = new(() => StaffTokens.Create(), null, method, HttpStatusCode.Forbidden);
+                cases[$"behavior 17: {method} with another X-Requested-With"] = new(() => StaffTokens.Create(), "fetch", method, HttpStatusCode.Forbidden);
+            }
+
+            return cases;
         }
+    }
 
+    [Theory]
+    [MemberData(nameof(LeakPaths))]
+    public async Task Behavior_15_no_log_line_and_no_response_holds_a_token_its_payload_or_an_email(string path)
+    {
+        var leakCase = LeakCases[path];
+        var token = leakCase.Token();
+        await using var factory = HostWith(FoundGateway());
+
+        using var response = await AccessRequest.SendAsync(factory, token, leakCase.RequestedWith, new HttpMethod(leakCase.Method));
+
+        Assert.Equal(leakCase.Status, response.StatusCode);
+        var written = new List<string> { await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken) };
+        written.AddRange(response.Headers.Concat(response.Content.Headers)
+            .SelectMany(header => header.Value.Select(value => $"{header.Key}: {value}")));
         written.AddRange(factory.Logs.Entries.SelectMany(entry =>
             new[] { entry.Message, entry.Exception?.ToString() ?? string.Empty }
                 .Concat(entry.Values.Values.Select(value => value?.ToString() ?? string.Empty))));
         Assert.NotEmpty(factory.Logs.Entries);
-        foreach (var secret in secrets)
+        foreach (var secret in SecretsOf(token))
         {
             Assert.DoesNotContain(written, text => text.Contains(secret, StringComparison.OrdinalIgnoreCase));
         }
@@ -521,6 +527,52 @@ public sealed class StaffAccessHandlerTests
     }
 
     private static long SecondsFromNow(int seconds) => DateTimeOffset.UtcNow.AddSeconds(seconds).ToUnixTimeSeconds();
+
+    /// <summary>
+    /// What must never be written: the configured email, and of the token, the whole token, its payload part, and its
+    /// email, when it has them.
+    /// </summary>
+    private static List<string> SecretsOf(string? token)
+    {
+        var secrets = new List<string> { StaffTokens.Email };
+        if (string.IsNullOrEmpty(token))
+        {
+            return secrets;
+        }
+
+        secrets.Add(token);
+        var parts = token.Split('.');
+        if (parts.Length < 2 || !TryReadPayload(parts[1], out var payload))
+        {
+            return secrets;
+        }
+
+        secrets.Add(parts[1]);
+        if (payload.TryGetProperty("email", out var email) && email.ValueKind == JsonValueKind.String
+            && !string.IsNullOrEmpty(email.GetString()))
+        {
+            secrets.Add(email.GetString()!);
+        }
+
+        return secrets;
+    }
+
+    private static bool TryReadPayload(string part, out JsonElement payload)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(Base64Url.DecodeFromChars(part));
+            payload = document.RootElement.Clone();
+            return payload.ValueKind == JsonValueKind.Object;
+        }
+        catch (Exception exception) when (exception is FormatException or JsonException)
+        {
+            payload = default;
+            return false;
+        }
+    }
+
+    private sealed record LeakCase(Func<string?> Token, string? RequestedWith, string Method, HttpStatusCode Status);
 
     private static async Task<JsonElement> AssertUnauthenticatedAsync(HttpResponseMessage response)
     {
