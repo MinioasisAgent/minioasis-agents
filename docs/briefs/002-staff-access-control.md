@@ -1,9 +1,9 @@
-- **Access:** Level 1
-- **Last Updated:** 2026-11-25
+- **Access:** Level 2
+- **Last Updated:** 2026-11-26
 
 # 002 — Staff access control
 
-- **Status:** draft
+- **Status:** approved
 - **Changes data in Koha:** no
 - **Related:** `docs/briefs/001-get-item.md` (the error contract), `FE-004` (the production path)
 
