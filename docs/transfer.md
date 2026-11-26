@@ -31,6 +31,19 @@ Why: a transfer merges a branch, and the branch holds every file. Leaving files 
 2. Create the label `needs-human` (**Issues → Labels → New label**). Agents put it on the pull requests that wait for you.
 3. Apply the branch protection of section 5.
 
+### In Cloudflare Access
+
+The Access application for the staff address is the first of the two boundaries (`FE-004`). Set it up so that:
+
+1. It covers the whole address, with no path left out and no policy that lets a request through without a sign-in. The frontend's files are protected like the API.
+2. Google is its only sign-in method.
+3. Its policy admits the one staff email, the same one that the backend is configured with (`docs/briefs/002-staff-access-control.md`, part 3).
+4. Its cookie setting "HttpOnly" is on, so that no script in the page can read the token. The frontend never needs it (`FE-004`).
+5. It has no CORS settings, and it does not pass `OPTIONS` requests on to the origin. With CORS settings, Cloudflare itself would permit another website to send the header that the backend requires.
+6. Its audience tag, which Cloudflare shows on the application's page, is the value of `MINIOASIS_CLOUDFLARE_ACCESS_AUDIENCE`.
+
+The backend's container must be able to reach the team's address at Cloudflare over HTTPS, to fetch the signing keys.
+
 ### For production
 
 Create an empty private repository `GoldBeluga/minioasis`. Give neither the Claude GitHub App nor `MinioasisAgent` access to it. Then, on your computer:

@@ -9,7 +9,8 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Current work
 
-- None. Brief 001, get item (`docs/briefs/001-get-item.md`), is `built` (2026-11-23) and waits for the maintainer's transfer from the branch `ready/001-get-item`.
+- Brief 002, staff access control (`docs/briefs/002-staff-access-control.md`), is a `draft` that waits for the maintainer's acceptance. Nothing of it is built.
+- Brief 001, get item (`docs/briefs/001-get-item.md`), is `built` (2026-11-23) and waits for the maintainer's transfer from the branch `ready/001-get-item`.
 
 ## What exists
 
@@ -23,20 +24,21 @@ This file holds only what GitHub and Git cannot show. Work in progress is the li
 
 ## Next
 
-- Brief 002, staff access control (`docs/ROADMAP.md`).
+- Build brief 002, once it is `approved`.
 
 ## Recent decisions
 
 - The test framework, xUnit v3 (`xunit.v3.mtp-off`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`), accepted by merging the foundation pull request.
 
 - The frontend (2026-11-24): a single-page application in `web/`, served by nginx, and built by its own coder from the API contract (`CLAUDE.md`, section 1, and `docs/best-practices/frontend.md`). None of it is built. `web/` and `contracts/minioasis.openapi.json` do not exist yet, and the joint check (`docs/process.md`, section 8) cannot run until the frontend foundation exists (`docs/ROADMAP.md`).
-- The production path (2026-11-24): browser, Cloudflare Access, Cloudflare Tunnel, nginx on localhost, backend on localhost (`FE-004`).
+- The production path (2026-11-24): browser, Cloudflare Access, Cloudflare Tunnel, nginx, backend (`FE-004`). Everything runs in Docker except Koha (2026-11-25), and each published port is bound to the machine's `127.0.0.1` only.
 - The joint check and the test Koha (2026-11-25): nothing in the application's code sends the Cloudflare Access headers. For the joint check, the backend reaches the test Koha through a helper program that is kept outside the repository and adds them (`docs/process.md`, section 8). It worked with plain requests on 2026-11-25. With the running backend behind it, it is not shown.
 
 ## Open questions for the maintainer
 
 - **The one-time setup** in `docs/transfer.md`, section 2: is the `needs-human` label created, is `GoldBeluga` a collaborator, and is branch protection set?
 - **Whether get item is transferred to production before staff access control (brief 002) is built.**
+- **How the containers reach each other and Koha.** `FE-004`'s example has nginx call the backend at `127.0.0.1`, which inside a container is the container itself, and has Vite's development server pass `/api/` to the backend, which after brief 002 refuses a call without a token. Everything runs in Docker except Koha (the maintainer, 2026-11-25). Inside a container `localhost` is the container, and brief 001 accepts plain `http` only for `localhost`. Either the container shares the machine's network, or brief 001 changes. To settle with the Docker files, before get item is transferred.
 
 ## Production transfers
 

@@ -1,11 +1,11 @@
 - **Access:** Level 2
-- **Last Updated:** 2026-11-23
+- **Last Updated:** 2026-11-25
 
 # External systems
 
 Rules `EX-001` to `EX-013`. The format, and the meaning of the made-up "renew a loan" examples, are explained in [`README.md`](README.md).
 
-Koha is the only external system today. `EX-001` to `EX-003` cover contracts and generated clients. `EX-004` to `EX-009` and `EX-013` describe how Minioasis authenticates to Koha; a capability uses that mechanism and does not rebuild it. `EX-010` to `EX-012` apply to every external call.
+Koha is the only external system that Minioasis works with today. The backend also fetches the public signing keys of Cloudflare Access, as `docs/briefs/002-staff-access-control.md` describes; these rules were written for Koha. `EX-001` to `EX-003` cover contracts and generated clients. `EX-004` to `EX-009` and `EX-013` describe how Minioasis authenticates to Koha; a capability uses that mechanism and does not rebuild it. `EX-010` to `EX-012` apply to every external call.
 
 A change that departs from a rule in this file is an exception, and always Level 2 (`CLAUDE.md`, section 3, item 5). A security decision that these rules leave open, such as how the client secret is sent, is Level 2 unless an approved brief states it (item 3). Tuning a value such as the timeout is neither.
 
