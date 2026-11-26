@@ -3,7 +3,7 @@
 
 # 002 — Staff access control
 
-- **Status:** approved
+- **Status:** built
 - **Changes data in Koha:** no
 - **Related:** `docs/briefs/001-get-item.md` (the error contract), `FE-004` (the production path)
 

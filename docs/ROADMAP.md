@@ -1,5 +1,5 @@
 - **Access:** Level 1
-- **Last Updated:** 2026-11-25
+- **Last Updated:** 2026-11-26
 
 # Roadmap
 
@@ -13,7 +13,7 @@ The order below is a proposal. The maintainer decides it.
 | --- | --- | --- | --- |
 | — | Foundation (done) | none | Not a capability, so it has no brief. The solution, and the three projects with their test projects, as `AR-001` and `TS-004` describe, with xUnit v3 as the test framework. It added dependencies, so it was a Level 2 change. It added no behavior. |
 | 001 | Get item | `docs/briefs/001-get-item.md` | Look up one Koha item by its item number. On 2026-11-23 the maintainer put the two shared parts into this brief: the API error contract (`ER-004` to `ER-007`, `ER-011`) and the Koha connection (`EX-004` to `EX-013`). |
-| 002 | Staff access control | `docs/briefs/002-staff-access-control.md` | The backend validates the Cloudflare Access token that nginx passes on, and the staff member's email, as the second of the two boundaries (`FE-004`). Until it is built, the API is open to anyone who can reach it. |
+| 002 | Staff access control | `docs/briefs/002-staff-access-control.md` | The backend validates the Cloudflare Access token that nginx passes on, and the staff member's email, as the second of the two boundaries (`FE-004`). Built on 2026-11-26. |
 | — | Move the backend into `backend/` (done) | none | Not a capability. The solution, the projects, and their tests move, and every file that names their paths follows. It is a Level 2 change. The maintainer's decision, 2026-11-24. |
 | — | Frontend foundation | none | Not a capability. It creates `web/` with the tools of `FE-001`, the frontend's checks and CI job, an example nginx configuration, and `contracts/minioasis.openapi.json` with the existing route and, on every route, the 401, the two 403 answers, and the masked 503 of brief 002. It adds the frontend's checks to `docs/process.md`, section 13, and how to run both components to `docs/running.md`. It is a Level 2 change. The maintainer chooses when. |
 | 003 | The first staff capability | not written yet | The maintainer chooses it. |
