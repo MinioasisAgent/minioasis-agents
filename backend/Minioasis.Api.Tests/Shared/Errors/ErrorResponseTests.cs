@@ -28,7 +28,7 @@ public sealed class ErrorResponseTests
             new FakeGetItemGateway(GetItemGatewayResult.Failed(GetItemOutcome.Unavailable)),
             environment);
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         await ProblemAssert.IsMaskedAsync(response, HttpStatusCode.ServiceUnavailable);
     }
@@ -41,7 +41,7 @@ public sealed class ErrorResponseTests
             new FakeGetItemGateway((_, _) => throw new InvalidOperationException(ExceptionText)),
             environment);
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         await ProblemAssert.IsMaskedAsync(response, HttpStatusCode.InternalServerError);
         Assert.DoesNotContain(
@@ -60,7 +60,7 @@ public sealed class ErrorResponseTests
     {
         await using var factory = HostWith(new FakeGetItemGateway(GetItemGatewayResult.Failed(outcome)));
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         var traceId = (await ProblemAssert.IsMaskedAsync(response, response.StatusCode)).GetProperty("traceId").GetString();
         var entry = Assert.Single(factory.Logs.Entries, entry => entry.Values.ContainsKey("ErrorCode"));
@@ -76,7 +76,7 @@ public sealed class ErrorResponseTests
         var failure = new InvalidOperationException(ExceptionText);
         await using var factory = HostWith(new FakeGetItemGateway((_, _) => throw failure));
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         var traceId = (await ProblemAssert.IsMaskedAsync(response, HttpStatusCode.InternalServerError))
             .GetProperty("traceId").GetString();
@@ -91,7 +91,7 @@ public sealed class ErrorResponseTests
     {
         await using var factory = HostWith(new FakeGetItemGateway(GetItemGatewayResult.Failed(GetItemOutcome.NotFound)));
 
-        using var response = await factory.CreateClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync("/api/v1/items/12", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.DoesNotContain(factory.Logs.Entries, entry => entry.Level >= LogLevel.Warning);
@@ -106,7 +106,7 @@ public sealed class ErrorResponseTests
     {
         await using var factory = new ApiTestHostFactory();
 
-        using var response = await factory.CreateClient().GetAsync(path, TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().GetAsync(path, TestContext.Current.CancellationToken);
 
         await ProblemAssert.HasShapeAsync(
             response,
@@ -126,7 +126,7 @@ public sealed class ErrorResponseTests
         await using var factory = new ApiTestHostFactory();
         using var request = new HttpRequestMessage(new HttpMethod(method), "/api/v1/items/1");
 
-        using var response = await factory.CreateClient().SendAsync(request, TestContext.Current.CancellationToken);
+        using var response = await factory.CreateStaffClient().SendAsync(request, TestContext.Current.CancellationToken);
 
         await ProblemAssert.HasShapeAsync(
             response,
@@ -154,7 +154,7 @@ public sealed class ErrorResponseTests
             services.AddSingleton<IStartupFilter>(new ResponseRecordingStartupFilter(finished)));
         using var caller = new CancellationTokenSource();
 
-        var sending = factory.CreateClient().GetAsync("/api/v1/items/12", caller.Token);
+        var sending = factory.CreateStaffClient().GetAsync("/api/v1/items/12", caller.Token);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         await caller.CancelAsync();
 

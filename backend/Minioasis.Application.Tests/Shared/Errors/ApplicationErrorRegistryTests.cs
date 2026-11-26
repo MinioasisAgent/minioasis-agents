@@ -55,10 +55,11 @@ public sealed class ApplicationErrorRegistryTests
     }
 
     [Fact]
-    public void The_default_registry_holds_the_codes_and_categories_of_brief_001()
+    public void The_default_registry_holds_the_codes_and_categories_of_briefs_001_and_002()
     {
         var expected = new Dictionary<string, ApplicationErrorCategory>
         {
+            ["access.keys_unavailable"] = ApplicationErrorCategory.DependencyUnavailable,
             ["items.invalid_identifier"] = ApplicationErrorCategory.Validation,
             ["items.not_found"] = ApplicationErrorCategory.NotFound,
             ["koha.authentication_failed"] = ApplicationErrorCategory.DependencyAuthenticationFailed,
